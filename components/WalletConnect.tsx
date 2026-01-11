@@ -29,16 +29,16 @@ export default function WalletConnect() {
     <>
       <button
         onClick={() => setShowModal(true)}
-        className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+        className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-800 shadow-sm hover:bg-stone-100 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
       >
         Connect Wallet
       </button>
 
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur">
-          <div className="w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-6 shadow-lg dark:border-stone-700 dark:bg-black">
+          <div className="w-full max-w-sm rounded-2xl border border-stone-200 bg-white p-6 shadow-lg dark:border-stone-800 dark:bg-stone-950">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">Connect to Farcaster</h2>
+              <h2 className="text-lg font-semibold text-stone-950 dark:text-amber-300">Connect to Farcaster</h2>
               <button
                 onClick={() => setShowModal(false)}
                 className="rounded-lg p-1 hover:bg-stone-100 dark:hover:bg-stone-800"

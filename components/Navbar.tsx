@@ -7,7 +7,7 @@ import AdminPanel from "./AdminPanel";
 import ThemeToggle from "./ThemeToggle";
 import WalletConnect from "./WalletConnect";
 
-const LOGO_SRC = "/logo/yeshua-christ.png";
+const LOGO_SRC = "/logo/yeshua-christ-header.png";
 
 export default function Navbar() {
   const [clickCount, setClickCount] = useState(0);
@@ -24,41 +24,41 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-stone-200 bg-stone-50/80 backdrop-blur dark:border-stone-700 dark:bg-black/80">
-        <div className="mx-auto flex w-full max-w-4xl items-center justify-between gap-4 px-4 py-3">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-stone-200 bg-white/80 backdrop-blur dark:border-stone-800 dark:bg-black/70">
+        <div className="mx-auto flex h-16 w-full max-w-4xl items-center justify-between gap-3 px-4">
           <Link href="/" onClick={handleLogoClick} className="flex items-center gap-3">
             <Image
               src={LOGO_SRC}
               alt="Yeshua-Christ"
-              width={140}
-              height={80}
+              width={260}
+              height={64}
               priority
-              className="rounded-full"
+              className="h-11 w-auto sm:h-[3.6rem]"
             />
           </Link>
 
         <nav className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2 text-sm">
           <Link
             href="/"
-            className="rounded-lg px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="rounded-lg px-2 py-1 text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-200 dark:hover:bg-stone-900"
           >
             Home
           </Link>
           <Link
             href="/faith"
-            className="rounded-lg px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="rounded-lg px-2 py-1 text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-200 dark:hover:bg-stone-900"
           >
             Faith
           </Link>
           <Link
             href="/videos"
-            className="rounded-lg px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="rounded-lg px-2 py-1 text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-200 dark:hover:bg-stone-900"
           >
             Videos
           </Link>
           <Link
             href="/bible"
-            className="rounded-lg px-2 py-1 hover:bg-stone-100 dark:hover:bg-stone-800"
+            className="rounded-lg px-2 py-1 text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-200 dark:hover:bg-stone-900"
           >
             Bible
           </Link>

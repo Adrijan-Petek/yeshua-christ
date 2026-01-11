@@ -119,7 +119,9 @@ export default function BiblePage() {
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">The Holy Bible</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-stone-950 dark:text-amber-300">
+          The Holy Bible
+        </h1>
         <p className="text-stone-700 dark:text-stone-300">Free to read and download. No tracking.</p>
       </header>
 

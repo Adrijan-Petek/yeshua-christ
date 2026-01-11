@@ -68,7 +68,9 @@ export default function FaithPage() {
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight">Faith &amp; Testimony</h1>
+        <h1 className="text-3xl font-semibold tracking-tight text-stone-950 dark:text-amber-300">
+          Faith &amp; Testimony
+        </h1>
         <p className="text-stone-700 dark:text-stone-300">
           Share encouragement, Scripture, and testimony — Christ-centered and respectful.
         </p>

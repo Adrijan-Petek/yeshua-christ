@@ -1,6 +1,7 @@
 "use client";
 
 import { QRCode, useProfile, useSignIn } from "@farcaster/auth-kit";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 export default function WalletConnect() {
@@ -15,19 +16,26 @@ export default function WalletConnect() {
     },
   });
 
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   if (!mounted) return null;
 
   if (isAuthenticated && profile) {
+    const username = profile.username ?? profile.displayName ?? "Farcaster";
+    const pfpSrc = profile.pfpUrl ?? "/icons/icon-150x150.png";
+
     return (
       <div className="flex items-center gap-2">
-        <img
-          src={profile.pfpUrl}
-          alt={profile.displayName}
+        <Image
+          src={pfpSrc}
+          alt={username}
+          width={32}
+          height={32}
           className="w-8 h-8 rounded-full"
+          unoptimized
         />
-        <span className="text-sm">{profile.displayName}</span>
+        <span className="text-sm font-medium">@{username}</span>
 
         <button
           type="button"

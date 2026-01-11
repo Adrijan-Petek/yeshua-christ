@@ -2,16 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import SplashScreen from "../components/SplashScreen";
 import DailyVerse from "../components/DailyVerse";
 
 export default function Home() {
-  const [shareUrl, setShareUrl] = useState("https://github.com/Adrijan-Petek/yeshua-christ");
-
-  useEffect(() => {
-    setShareUrl(window.location.origin);
-  }, []);
+  const shareUrl =
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://github.com/Adrijan-Petek/yeshua-christ";
 
   const addMiniAppHref = useMemo(
     () =>

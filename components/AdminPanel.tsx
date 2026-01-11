@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type AdminPanelProps = {
   onClose: () => void;
@@ -9,13 +9,10 @@ type AdminPanelProps = {
 const STORAGE_KEY_RULES = "yc_admin_rules";
 
 export default function AdminPanel({ onClose }: AdminPanelProps) {
-  const [rules, setRules] = useState("");
-
-  useEffect(() => {
+  const [rules, setRules] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_RULES);
-    if (saved) setRules(saved);
-    else setRules("Christ-centered content only\nNo politics\nNo financial promotion");
-  }, []);
+    return saved || "Christ-centered content only\nNo politics\nNo financial promotion";
+  });
 
   const saveRules = () => {
     localStorage.setItem(STORAGE_KEY_RULES, rules);

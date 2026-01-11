@@ -18,7 +18,9 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
     try {
       const seen = sessionStorage.getItem(STORAGE_KEY);
       if (seen) return;
+
       sessionStorage.setItem(STORAGE_KEY, "1");
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShouldShow(true);
 
       const timeout = window.setTimeout(() => {
@@ -28,12 +30,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
 
       return () => window.clearTimeout(timeout);
     } catch {
-      setShouldShow(true);
-      const timeout = window.setTimeout(() => {
-        setShouldShow(false);
-        onComplete?.();
-      }, DURATION_MS);
-      return () => window.clearTimeout(timeout);
+      // If sessionStorage is unavailable, we just skip the splash.
+      return;
     }
   }, [onComplete]);
 

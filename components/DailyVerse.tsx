@@ -17,10 +17,9 @@ export default function DailyVerse() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [appUrl, setAppUrl] = useState("");
+  const [appUrl] = useState(() => typeof window !== 'undefined' ? window.location.origin : '');
 
   useEffect(() => {
-    setAppUrl(window.location.origin);
 
     const fetchDailyVerse = async () => {
       try {
@@ -33,7 +32,7 @@ export default function DailyVerse() {
           text: data.text,
           translation_name: data.translation_name,
         });
-      } catch (err) {
+      } catch {
         setError("Could not load daily verse");
       } finally {
         setLoading(false);
@@ -64,7 +63,7 @@ export default function DailyVerse() {
       <h2 className="text-xl font-semibold text-stone-950 dark:text-amber-300">Daily Verse</h2>
       {verse && (
         <div className="space-y-2">
-          <p className="text-lg italic text-stone-800 dark:text-stone-200">"{verse.text}"</p>
+          <p className="text-lg italic text-stone-800 dark:text-stone-200">&ldquo;{verse.text}&rdquo;</p>
           <p className="text-sm font-medium text-stone-700 dark:text-stone-300">{verse.reference}</p>
           <p className="text-xs text-stone-600 dark:text-stone-400">{verse.translation_name}</p>
 

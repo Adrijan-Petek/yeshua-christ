@@ -83,8 +83,12 @@ export default function VideosPage() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    const rules = localStorage.getItem("yc_admin_rules");
-    setIsAdmin(!!rules);
+    try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setIsAdmin(!!localStorage.getItem("yc_admin_rules"));
+    } catch {
+      // ignore
+    }
   }, []);
 
   const canAdd = useMemo(() => input.trim().length > 0, [input]);

@@ -13,7 +13,7 @@ export default function Navbar() {
   const [clickCount, setClickCount] = useState(0);
   const [showAdmin, setShowAdmin] = useState(false);
 
-  const handleLogoClick = (e: React.MouseEvent) => {
+  const handleLogoClick = () => {
     const newCount = clickCount + 1;
     setClickCount(newCount);
     if (newCount >= 10) {

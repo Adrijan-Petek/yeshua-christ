@@ -36,8 +36,8 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
           <Image
             src={ICON_SRC}
             alt="Yeshua-Christ"
-            width={192}
-            height={192}
+            width={128}
+            height={128}
             priority
             className="rounded-2xl shadow-lg mx-auto drop-shadow-2xl animate-bounce"
           />

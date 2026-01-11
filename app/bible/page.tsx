@@ -358,7 +358,7 @@ export default function BiblePage() {
         {readerTab === "pdf" && (
           <div className="w-full">
             <iframe
-              src="/bible/bible.pdf"
+              src="/bible/kjv.pdf"
               width="100%"
               height="650"
               className="rounded-lg border border-stone-200 dark:border-stone-700"
@@ -372,7 +372,7 @@ export default function BiblePage() {
 
         {readerTab === "text" && (
           <div className="space-y-4">
-            {loading && <p className="text-sm text-stone-600 dark:text-stone-400">Loading…</p>}
+            DOC
             {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
 
             {!loading && !error && !index && (

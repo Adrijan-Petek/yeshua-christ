@@ -22,6 +22,7 @@ export const metadata: Metadata = {
     apple: [{ url: "/icons/icon-180x180.png", sizes: "180x180", type: "image/png" }],
   },
   other: {
+    "base:app_id": "696415b08a6eeb04b568df4a",
     "fc:miniapp": JSON.stringify({
       version: "1",
       imageUrl: "https://yeshua-christ.vercel.app/og",

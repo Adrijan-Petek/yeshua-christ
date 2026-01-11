@@ -1,9 +1,15 @@
 @import "tailwindcss";
+@import "@farcaster/auth-kit/styles.css";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 body {
   margin: 0;
+}
+
+/* Center Farcaster AuthKit modal (override default bottom-sheet positioning). */
+.nao3n42 {
+  align-items: center !important;
 }
 
 @keyframes yc-splash {

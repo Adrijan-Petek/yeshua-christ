@@ -37,39 +37,10 @@ export default function Navbar() {
             />
           </Link>
 
-        <nav className="flex flex-wrap items-center justify-end gap-x-2 gap-y-2 text-sm">
-          <Link
-            href="/"
-            className="rounded-lg px-2 py-1 text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-200 dark:hover:bg-stone-900"
-          >
-            Home
-          </Link>
-          <Link
-            href="/faith"
-            className="rounded-lg px-2 py-1 text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-200 dark:hover:bg-stone-900"
-          >
-            Faith
-          </Link>
-          <Link
-            href="/videos"
-            className="rounded-lg px-2 py-1 text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-200 dark:hover:bg-stone-900"
-          >
-            Videos
-          </Link>
-          <Link
-            href="/bible"
-            className="rounded-lg px-2 py-1 text-stone-700 hover:bg-stone-100 hover:text-stone-950 dark:text-stone-200 dark:hover:bg-stone-900"
-          >
-            Bible
-          </Link>
-
-          <div className="ml-1">
+          <div className="flex items-center gap-2">
             <ThemeToggle />
-          </div>
-          <div className="ml-1">
             <WalletConnect />
           </div>
-        </nav>
       </div>
     </header>
 

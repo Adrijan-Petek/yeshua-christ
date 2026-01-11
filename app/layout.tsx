@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Lora } from "next/font/google";
 import BodyContent from "./body-content";
 import Navbar from "../components/Navbar";
+import SubNav from "../components/SubNav";
 import Providers from "./providers";
 import "./globals.css";
 
@@ -13,6 +14,13 @@ const lora = Lora({
 export const metadata: Metadata = {
   title: "Yeshua-Christ",
   description: "Spread the Gospel freely",
+  icons: {
+    icon: [
+      { url: "/icons/icon-32x32.png", sizes: "32x32", type: "image/png" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-180x180.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export default function RootLayout({
@@ -28,7 +36,10 @@ export default function RootLayout({
         <BodyContent>
           <Providers>
             <Navbar />
-            <main className="mx-auto w-full max-w-4xl px-4 pb-12 pt-20">{children}</main>
+            <div className="mx-auto w-full max-w-4xl px-4 pb-12 pt-20">
+              <SubNav />
+              <main className="pt-6">{children}</main>
+            </div>
           </Providers>
         </BodyContent>
       </body>

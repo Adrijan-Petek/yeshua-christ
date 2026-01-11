@@ -8,12 +8,20 @@ interface Verse {
   translation_name: string;
 }
 
+function composeUrl(text: string) {
+  return `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
+}
+
 export default function DailyVerse() {
   const [verse, setVerse] = useState<Verse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [appUrl, setAppUrl] = useState("");
+
   useEffect(() => {
+    setAppUrl(window.location.origin);
+
     const fetchDailyVerse = async () => {
       try {
         // For daily verse, using John 3:16 as example. In production, could randomize or use date-based reference.
@@ -59,6 +67,19 @@ export default function DailyVerse() {
           <p className="text-lg italic text-stone-800 dark:text-stone-200">"{verse.text}"</p>
           <p className="text-sm font-medium text-stone-700 dark:text-stone-300">{verse.reference}</p>
           <p className="text-xs text-stone-600 dark:text-stone-400">{verse.translation_name}</p>
+
+          <div className="pt-2">
+            <a
+              href={composeUrl(
+                `${verse.reference} (${verse.translation_name})\n\n${verse.text}\n\n${appUrl ? `${appUrl}\n\n` : ""}#YeshuaChrist`,
+              )}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-800 shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+            >
+              Recast daily verse
+            </a>
+          </div>
         </div>
       )}
     </div>

@@ -1,12 +1,19 @@
 "use client";
 
-import { SignInButton, useProfile } from "@farcaster/auth-kit";
+import { QRCode, useProfile, useSignIn } from "@farcaster/auth-kit";
 import { useEffect, useState } from "react";
 
 export default function WalletConnect() {
   const { isAuthenticated, profile } = useProfile();
   const [mounted, setMounted] = useState(false);
   const [showModal, setShowModal] = useState(false);
+
+  const { signIn, signOut, reconnect, isPolling, isError, error, url } = useSignIn({
+    onSuccess: () => setShowModal(false),
+    onError: () => {
+      // Keep the modal open so user can retry.
+    },
+  });
 
   useEffect(() => setMounted(true), []);
 
@@ -21,6 +28,14 @@ export default function WalletConnect() {
           className="w-8 h-8 rounded-full"
         />
         <span className="text-sm">{profile.displayName}</span>
+
+        <button
+          type="button"
+          onClick={() => signOut()}
+          className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-800 shadow-sm hover:bg-stone-100 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
+        >
+          Disconnect
+        </button>
       </div>
     );
   }
@@ -28,10 +43,14 @@ export default function WalletConnect() {
   return (
     <>
       <button
-        onClick={() => setShowModal(true)}
+        type="button"
+        onClick={() => {
+          setShowModal(true);
+          signIn();
+        }}
         className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-800 shadow-sm hover:bg-stone-100 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
       >
-        Connect Wallet
+        Connect Farcaster
       </button>
 
       {showModal && (
@@ -40,15 +59,66 @@ export default function WalletConnect() {
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold text-stone-950 dark:text-amber-300">Connect to Farcaster</h2>
               <button
+                type="button"
                 onClick={() => setShowModal(false)}
                 className="rounded-lg p-1 hover:bg-stone-100 dark:hover:bg-stone-800"
               >
                 ✕
               </button>
             </div>
-            <div className="flex justify-center">
-              <SignInButton />
-            </div>
+
+            {!url && (
+              <div className="space-y-3">
+                <p className="text-sm text-stone-700 dark:text-stone-300">
+                  Preparing sign-in…
+                </p>
+                <button
+                  type="button"
+                  onClick={signIn}
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+                >
+                  Start again
+                </button>
+              </div>
+            )}
+
+            {url && (
+              <div className="space-y-4">
+                <div className="flex justify-center">
+                  <div className="rounded-2xl border border-stone-200 bg-white p-3 dark:border-stone-800 dark:bg-black">
+                    <QRCode uri={url} />
+                  </div>
+                </div>
+
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+                >
+                  Open in Warpcast
+                </a>
+
+                {isPolling && (
+                  <p className="text-center text-xs text-stone-600 dark:text-stone-400">Waiting for approval…</p>
+                )}
+
+                {isError && (
+                  <div className="space-y-2">
+                    <p className="text-xs text-red-700 dark:text-red-400">
+                      {error?.message ?? "Could not connect. Please try again."}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={reconnect}
+                      className="w-full rounded-xl border border-stone-200 bg-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-50 dark:border-stone-700 dark:bg-black dark:hover:bg-stone-900"
+                    >
+                      Try again
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

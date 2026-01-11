@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Category = "Sermon" | "Worship" | "Testimony" | "Bible Study";
 
@@ -72,7 +72,20 @@ export default function VideosPage() {
   const [input, setInput] = useState("");
   const [category, setCategory] = useState<Category>("Sermon");
   const [error, setError] = useState<string | null>(null);
-  const [videos, setVideos] = useState<VideoEntry[]>([]);
+  const [videos, setVideos] = useState<VideoEntry[]>([
+    {
+      id: "default-playlist",
+      originalUrl: "https://youtube.com/playlist?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M&si=K0jzitUVp0fNZtB0",
+      embedUrl: "https://www.youtube.com/embed/videoseries?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M",
+      category: "Bible Study",
+    },
+  ]);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    const rules = localStorage.getItem("yc_admin_rules");
+    setIsAdmin(!!rules);
+  }, []);
 
   const canAdd = useMemo(() => input.trim().length > 0, [input]);
 
@@ -102,10 +115,11 @@ export default function VideosPage() {
           Videos
         </h1>
         <p className="text-stone-700 dark:text-stone-300">
-          Share sermons, worship, testimony, and Bible study — embeds only (no uploads).
+          Share worship music videos that glorify Christ.
         </p>
       </header>
 
+      {isAdmin && (
       <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-black">
         <h2 className="mb-3 text-lg font-semibold">Add a YouTube link</h2>
 
@@ -141,19 +155,24 @@ export default function VideosPage() {
 
         {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
       </section>
+      )}
 
       <section className="space-y-4">
         {videos.length === 0 && (
           <p className="text-sm text-stone-600 dark:text-stone-400">No videos added yet.</p>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {videos.map((v) => (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {videos.map((v) => {
+            const isPlaylist = v.embedUrl.includes('videoseries');
+            return (
             <article
               key={v.id}
-              className="overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-black"
+              className={`overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-black ${
+                isPlaylist ? 'sm:col-span-2 lg:col-span-3' : ''
+              }`}
             >
-              <div className="aspect-video w-full bg-stone-100 dark:bg-black">
+              <div className="w-full bg-stone-100 dark:bg-black" style={{ height: '360px' }}>
                 <iframe
                   className="h-full w-full"
                   src={v.embedUrl}
@@ -191,7 +210,8 @@ export default function VideosPage() {
                 </a>
               </div>
             </article>
-          ))}
+            );
+          })}
         </div>
       </section>
     </div>

@@ -5,20 +5,51 @@ import { sdk } from "@farcaster/miniapp-sdk";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+type MiniAppUser = {
+  fid: number;
+  username?: string;
+  displayName?: string;
+  pfpUrl?: string;
+};
+
+async function fetchWarpcastUserByFid(fid: number): Promise<MiniAppUser | null> {
+  try {
+    const res = await fetch(`https://client.warpcast.com/v2/user?fid=${fid}`, {
+      headers: { accept: "application/json" },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as {
+      result?: {
+        user?: {
+          fid: number;
+          username?: string;
+          displayName?: string;
+          pfp?: { url?: string };
+        };
+      };
+    };
+
+    const user = json?.result?.user;
+    if (!user?.fid) return null;
+
+    return {
+      fid: user.fid,
+      username: user.username,
+      displayName: user.displayName,
+      pfpUrl: user.pfp?.url,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export default function WalletConnect() {
   const { isAuthenticated, profile } = useProfile();
   const [mounted, setMounted] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [isMiniApp, setIsMiniApp] = useState(false);
-  const [miniUser, setMiniUser] = useState<
-    | {
-        fid: number;
-        username?: string;
-        displayName?: string;
-        pfpUrl?: string;
-      }
-    | null
-  >(null);
+  const [miniUser, setMiniUser] = useState<MiniAppUser | null>(null);
 
   const { signIn, signOut, reconnect, isPolling, isError, error, url } = useSignIn({
     onSuccess: () => setShowModal(false),
@@ -39,15 +70,22 @@ export default function WalletConnect() {
 
       setIsMiniApp(inMiniApp);
       if (inMiniApp) {
-        const user = (sdk as unknown as { context?: { user?: unknown } }).context?.user as
-          | {
-              fid: number;
-              username?: string;
-              displayName?: string;
-              pfpUrl?: string;
-            }
-          | undefined;
-        setMiniUser(user ?? null);
+        const contextUser = (sdk as unknown as { context?: { user?: MiniAppUser } }).context?.user ?? null;
+
+        // Some hosts may omit optional profile fields. If username/pfp is missing,
+        // fetch from public indexer using fid.
+        if (contextUser?.fid && (!contextUser.username || !contextUser.pfpUrl)) {
+          const enriched = await fetchWarpcastUserByFid(contextUser.fid);
+          if (cancelled) return;
+          setMiniUser({
+            fid: contextUser.fid,
+            username: contextUser.username ?? enriched?.username,
+            displayName: contextUser.displayName ?? enriched?.displayName,
+            pfpUrl: contextUser.pfpUrl ?? enriched?.pfpUrl,
+          });
+        } else {
+          setMiniUser(contextUser);
+        }
         setShowModal(false);
       }
     })();
@@ -62,13 +100,20 @@ export default function WalletConnect() {
   // In Farcaster Mini Apps, the user is already “connected” via host context.
   // Show them as connected and skip the QR-code flow.
   if (isMiniApp) {
-    const username = miniUser?.username ?? miniUser?.displayName ?? (miniUser ? `fid:${miniUser.fid}` : "Farcaster");
+    const handle = miniUser?.username;
+    const label = handle
+      ? `@${handle}`
+      : miniUser?.displayName
+        ? miniUser.displayName
+        : miniUser
+          ? `FID ${miniUser.fid}`
+          : "Farcaster";
     const pfpSrc = miniUser?.pfpUrl ?? "/icons/icon-150x150.png";
 
     return (
       <div className="flex items-center gap-2">
-        <Image src={pfpSrc} alt={username} width={32} height={32} className="w-8 h-8 rounded-full" unoptimized />
-        <span className="text-sm font-medium">@{username}</span>
+        <Image src={pfpSrc} alt={label} width={32} height={32} className="w-8 h-8 rounded-full" unoptimized />
+        <span className="text-sm font-medium">{label}</span>
       </div>
     );
   }

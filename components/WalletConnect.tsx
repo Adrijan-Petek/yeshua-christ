@@ -12,6 +12,19 @@ type MiniAppUser = {
   pfpUrl?: string;
 };
 
+function normalizeMiniAppUser(input: unknown): MiniAppUser | null {
+  if (!input || typeof input !== "object") return null;
+  const record = input as Record<string, unknown>;
+  const fid = record.fid;
+  if (typeof fid !== "number" || !Number.isFinite(fid)) return null;
+
+  const username = typeof record.username === "string" ? record.username : undefined;
+  const displayName = typeof record.displayName === "string" ? record.displayName : undefined;
+  const pfpUrl = typeof record.pfpUrl === "string" ? record.pfpUrl : undefined;
+
+  return { fid, username, displayName, pfpUrl };
+}
+
 async function fetchWarpcastUserByFid(fid: number): Promise<MiniAppUser | null> {
   try {
     const res = await fetch(`https://client.warpcast.com/v2/user?fid=${fid}`, {
@@ -70,7 +83,7 @@ export default function WalletConnect() {
 
       setIsMiniApp(inMiniApp);
       if (inMiniApp) {
-        const contextUser = (sdk as unknown as { context?: { user?: MiniAppUser } }).context?.user ?? null;
+        const contextUser = normalizeMiniAppUser((sdk as unknown as { context?: { user?: unknown } }).context?.user);
 
         // Some hosts may omit optional profile fields. If username/pfp is missing,
         // fetch from public indexer using fid.
@@ -101,12 +114,14 @@ export default function WalletConnect() {
   // Show them as connected and skip the QR-code flow.
   if (isMiniApp) {
     const handle = miniUser?.username;
+    const fid = miniUser?.fid;
+    const hasFid = typeof fid === "number" && Number.isFinite(fid);
     const label = handle
       ? `@${handle}`
       : miniUser?.displayName
         ? miniUser.displayName
-        : miniUser
-          ? `FID ${miniUser.fid}`
+        : hasFid
+          ? `FID ${fid}`
           : "Farcaster";
     const pfpSrc = miniUser?.pfpUrl ?? "/icons/icon-150x150.png";
 

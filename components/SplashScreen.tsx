@@ -8,46 +8,53 @@ type SplashScreenProps = {
 };
 
 const LOGO_SRC = "/logo/yeshua-christ.png";
-const STORAGE_KEY = "yc_splash_seen";
 const DURATION_MS = 3200;
 
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
   const [shouldShow, setShouldShow] = useState(false);
 
   useEffect(() => {
-    try {
-      const seen = sessionStorage.getItem(STORAGE_KEY);
-      if (seen) return;
+    // Always show on refresh.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setShouldShow(true);
 
-      sessionStorage.setItem(STORAGE_KEY, "1");
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setShouldShow(true);
+    const timeout = window.setTimeout(() => {
+      setShouldShow(false);
+      onComplete?.();
+    }, DURATION_MS);
 
-      const timeout = window.setTimeout(() => {
-        setShouldShow(false);
-        onComplete?.();
-      }, DURATION_MS);
-
-      return () => window.clearTimeout(timeout);
-    } catch {
-      // If sessionStorage is unavailable, we just skip the splash.
-      return;
-    }
+    return () => window.clearTimeout(timeout);
   }, [onComplete]);
 
   if (!shouldShow) return null;
 
   return (
-    <div className="fixed inset-0 z-[60] grid place-items-center bg-stone-50 dark:bg-black">
-      <div className="yc-splash-logo">
-        <Image
-          src={LOGO_SRC}
-          alt="Yeshua-Christ"
-          width={220}
-          height={220}
-          priority
-          className="rounded-2xl shadow-sm"
-        />
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-gradient-to-br from-stone-50 via-amber-50 to-stone-100 dark:from-black dark:via-stone-950 dark:to-black">
+      <div className="text-center space-y-6">
+        <div className="yc-splash-logo">
+          <Image
+            src={LOGO_SRC}
+            alt="Yeshua-Christ"
+            width={220}
+            height={220}
+            priority
+            className="rounded-2xl shadow-lg mx-auto drop-shadow-2xl animate-bounce"
+          />
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-2xl font-bold text-stone-800 dark:text-amber-300">
+            Yeshua-Christ
+          </h1>
+          <p className="text-sm text-stone-600 dark:text-stone-400 max-w-xs mx-auto">
+            &ldquo;For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.&rdquo;
+          </p>
+          <p className="text-xs text-stone-500 dark:text-stone-500">
+            John 3:16
+          </p>
+        </div>
+        <div>
+          <div className="w-8 h-8 border-2 border-stone-400 dark:border-amber-400 border-t-transparent rounded-full animate-spin mx-auto"></div>
+        </div>
       </div>
     </div>
   );

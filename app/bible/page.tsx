@@ -153,6 +153,22 @@ export default function BiblePage() {
       </section>
 
       <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-black">
+        <h2 className="mb-3 text-lg font-semibold">PDF Reader</h2>
+        <div className="w-full">
+          <iframe
+            src="/bible/bible.pdf"
+            width="100%"
+            height="600"
+            className="border border-stone-200 rounded-lg dark:border-stone-700"
+            title="Bible PDF Reader"
+          />
+        </div>
+        <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
+          View the Bible directly in your browser. Download available above if needed.
+        </p>
+      </section>
+
+      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-black">
         <h2 className="mb-4 text-lg font-semibold">Online Reading</h2>
 
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

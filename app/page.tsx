@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import SplashScreen from "../components/SplashScreen";
+import DailyVerse from "../components/DailyVerse";
 
 const LOGO_SRC = "/logo/yeshua-christ.png";
 
@@ -46,6 +47,10 @@ export default function Home() {
           >
             Go to Bible
           </Link>
+        </div>
+
+        <div className="mt-12 w-full max-w-2xl">
+          <DailyVerse />
         </div>
       </section>
     </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buildWarpcastComposeUrl, tryComposeCast } from "../../lib/farcasterShare";
 
 type Category = "Sermon" | "Worship" | "Testimony" | "Bible Study";
 
@@ -12,10 +13,6 @@ type VideoEntry = {
 };
 
 const categories: Category[] = ["Sermon", "Worship", "Testimony", "Bible Study"];
-
-function composeUrl(text: string) {
-  return `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
-}
 
 function parseYouTube(input: string): { embedUrl: string } | null {
   try {
@@ -81,6 +78,7 @@ export default function VideosPage() {
     },
   ]);
   const [isAdmin, setIsAdmin] = useState(false);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   useEffect(() => {
     try {
@@ -169,6 +167,17 @@ export default function VideosPage() {
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {videos.map((v) => {
             const isPlaylist = v.embedUrl.includes('videoseries');
+
+            const shareText = `Be encouraged in Christ\n\n#YeshuaChrist`;
+            const shareEmbeds = [v.originalUrl, appUrl].filter(Boolean) as string[];
+            const shareHref = buildWarpcastComposeUrl({ text: `${shareText}\n\n${v.originalUrl}`, embeds: shareEmbeds });
+
+            const onShareClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+              e.preventDefault();
+              const ok = await tryComposeCast({ text: `${shareText}\n\n${v.originalUrl}`, embeds: shareEmbeds });
+              if (!ok) window.open(shareHref, "_blank", "noopener,noreferrer");
+            };
+
             return (
             <article
               key={v.id}
@@ -203,9 +212,8 @@ export default function VideosPage() {
                 </div>
 
                 <a
-                  href={composeUrl(
-                    `Be encouraged in Christ ✝️\n\n${v.originalUrl}\n\n#YeshuaChrist`,
-                  )}
+                  href={shareHref}
+                  onClick={onShareClick}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"

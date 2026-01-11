@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { buildWarpcastComposeUrl, tryComposeCast } from "../../lib/farcasterShare";
 
 type BibleIndex = {
   bookNames: string[];
@@ -83,10 +84,6 @@ const BOOKS: string[] = [
   "Jude",
   "Revelation",
 ];
-
-function composeUrl(text: string) {
-  return `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
-}
 
 function parseChapterVerses(raw: string): Record<number, string> {
   const lines = raw
@@ -222,6 +219,8 @@ export default function BiblePage() {
   const [bookName, setBookName] = useState<string>("Genesis");
   const [chapterNumber, setChapterNumber] = useState<number>(1);
   const [selected, setSelected] = useState<SelectedVerse | null>(null);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const shareEmbeds = useMemo(() => (appUrl ? [appUrl] : []), [appUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -432,6 +431,8 @@ export default function BiblePage() {
                   selected?.book === bookName &&
                   selected?.chapter === chapterNumber &&
                   selected?.verse === n;
+                const shareText = `${bookName} ${chapterNumber}:${n} (KJV)\n\n${text}\n\n#YeshuaChrist`;
+                const shareHref = buildWarpcastComposeUrl({ text: shareText, embeds: shareEmbeds });
 
                 return (
                   <div key={n} className="space-y-2">
@@ -450,9 +451,12 @@ export default function BiblePage() {
 
                     {isSelected && (
                       <a
-                        href={composeUrl(
-                          `${bookName} ${chapterNumber}:${n} (KJV)\n\n${text}\n\n#YeshuaChrist`,
-                        )}
+                        href={shareHref}
+                        onClick={async (e) => {
+                          e.preventDefault();
+                          const ok = await tryComposeCast({ text: shareText, embeds: shareEmbeds });
+                          if (!ok) window.open(shareHref, "_blank", "noopener,noreferrer");
+                        }}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"

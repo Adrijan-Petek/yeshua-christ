@@ -2,28 +2,59 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import SplashScreen from "../components/SplashScreen";
 import DailyVerse from "../components/DailyVerse";
+import { buildWarpcastComposeUrl, tryComposeCast } from "../lib/farcasterShare";
 
 export default function Home() {
   const shareUrl =
     process.env.NEXT_PUBLIC_APP_URL ?? "https://github.com/Adrijan-Petek/yeshua-christ";
 
+  const shareEmbeds = useMemo(() => [shareUrl], [shareUrl]);
+
   const addMiniAppHref = useMemo(
     () =>
-      `https://warpcast.com/~/compose?text=${encodeURIComponent(
-        `Add this mini app ✝️\n\n${shareUrl}\n\n#YeshuaChrist`,
-      )}`,
-    [shareUrl],
+      buildWarpcastComposeUrl({
+        text: `Add this mini app\n\n${shareUrl}\n\n#YeshuaChrist`,
+        embeds: shareEmbeds,
+      }),
+    [shareEmbeds, shareUrl],
   );
 
   const recastAppHref = useMemo(
     () =>
-      `https://warpcast.com/~/compose?text=${encodeURIComponent(
-        `Recast / share this app ✝️\n\n${shareUrl}\n\n#YeshuaChrist`,
-      )}`,
-    [shareUrl],
+      buildWarpcastComposeUrl({
+        text: `Recast / share this app\n\n${shareUrl}\n\n#YeshuaChrist`,
+        embeds: shareEmbeds,
+      }),
+    [shareEmbeds, shareUrl],
+  );
+
+  const onAddMiniAppClick = useCallback(
+    async (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      const ok = await tryComposeCast({
+        text: `Add this mini app\n\n${shareUrl}\n\n#YeshuaChrist`,
+        embeds: shareEmbeds,
+      });
+
+      if (!ok) window.open(addMiniAppHref, "_blank", "noopener,noreferrer");
+    },
+    [addMiniAppHref, shareEmbeds, shareUrl],
+  );
+
+  const onRecastAppClick = useCallback(
+    async (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      const ok = await tryComposeCast({
+        text: `Recast / share this app\n\n${shareUrl}\n\n#YeshuaChrist`,
+        embeds: shareEmbeds,
+      });
+
+      if (!ok) window.open(recastAppHref, "_blank", "noopener,noreferrer");
+    },
+    [recastAppHref, shareEmbeds, shareUrl],
   );
 
   return (
@@ -74,6 +105,7 @@ export default function Home() {
         <div className="mt-8 grid w-full max-w-lg grid-cols-1 gap-4 sm:grid-cols-2">
           <a
             href={addMiniAppHref}
+            onClick={onAddMiniAppClick}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
@@ -82,6 +114,7 @@ export default function Home() {
           </a>
           <a
             href={recastAppHref}
+            onClick={onRecastAppClick}
             target="_blank"
             rel="noopener noreferrer"
             className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"

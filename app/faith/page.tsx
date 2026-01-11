@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { buildWarpcastComposeUrl, tryComposeCast } from "../../lib/farcasterShare";
 
 type WarpcastAuthor = {
   username?: string;
@@ -17,11 +18,7 @@ type WarpcastCast = {
   recasts?: { count?: number };
 };
 
-const PREFILL_TEXT = "Sharing faith ✝️ #YeshuaChrist";
-
-function composeUrl(text: string) {
-  return `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
-}
+const PREFILL_TEXT = "Sharing faith\n\n#YeshuaChrist";
 
 function castUrl(hash: string) {
   return `https://warpcast.com/~/cast/${hash}`;
@@ -39,6 +36,22 @@ export default function FaithPage() {
   }, []);
 
   const query = useMemo(() => "#YeshuaChrist", []);
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const shareEmbeds = useMemo(() => (appUrl ? [appUrl] : []), [appUrl]);
+  const shareHref = useMemo(
+    () => buildWarpcastComposeUrl({ text: PREFILL_TEXT, embeds: shareEmbeds }),
+    [shareEmbeds],
+  );
+
+  const onShareClick = useCallback(
+    async (e: React.MouseEvent<HTMLAnchorElement>) => {
+      e.preventDefault();
+      const ok = await tryComposeCast({ text: PREFILL_TEXT, embeds: shareEmbeds });
+      if (!ok) window.open(shareHref, "_blank", "noopener,noreferrer");
+    },
+    [shareEmbeds, shareHref],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -85,7 +98,8 @@ export default function FaithPage() {
             </p>
           </div>
           <a
-            href={composeUrl(PREFILL_TEXT)}
+            href={shareHref}
+            onClick={onShareClick}
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"

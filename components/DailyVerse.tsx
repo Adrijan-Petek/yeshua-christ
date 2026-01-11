@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { buildWarpcastComposeUrl, tryComposeCast } from "../lib/farcasterShare";
 
 interface Verse {
   reference: string;
@@ -8,16 +9,13 @@ interface Verse {
   translation_name: string;
 }
 
-function composeUrl(text: string) {
-  return `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
-}
-
 export default function DailyVerse() {
   const [verse, setVerse] = useState<Verse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [appUrl] = useState(() => typeof window !== 'undefined' ? window.location.origin : '');
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const shareEmbeds = useMemo(() => (appUrl ? [appUrl] : []), [appUrl]);
 
   useEffect(() => {
 
@@ -67,18 +65,29 @@ export default function DailyVerse() {
           <p className="text-sm font-medium text-stone-700 dark:text-stone-300">{verse.reference}</p>
           <p className="text-xs text-stone-600 dark:text-stone-400">{verse.translation_name}</p>
 
-          <div className="pt-2">
-            <a
-              href={composeUrl(
-                `${verse.reference} (${verse.translation_name})\n\n${verse.text}\n\n${appUrl ? `${appUrl}\n\n` : ""}#YeshuaChrist`,
-              )}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-800 shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
-            >
-              Recast daily verse
-            </a>
-          </div>
+          {(() => {
+            const shareText = `${verse.reference} (${verse.translation_name})\n\n${verse.text}\n\n#YeshuaChrist`;
+            const shareHref = buildWarpcastComposeUrl({ text: shareText, embeds: shareEmbeds });
+            const onShareClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
+              e.preventDefault();
+              const ok = await tryComposeCast({ text: shareText, embeds: shareEmbeds });
+              if (!ok) window.open(shareHref, "_blank", "noopener,noreferrer");
+            };
+
+            return (
+              <div className="pt-2">
+                <a
+                  href={shareHref}
+                  onClick={onShareClick}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-800 shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:hover:bg-stone-700"
+                >
+                  Recast daily verse
+                </a>
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

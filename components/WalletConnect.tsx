@@ -69,11 +69,7 @@ async function fetchVerifiedMiniAppUser(): Promise<MiniAppUser | null> {
     if (typeof fid !== "number" || !Number.isFinite(fid)) return null;
 
     const enriched = await fetchWarpcastUserByFid(fid);
-    return (
-      enriched ?? {
-        fid,
-      }
-    );
+    return enriched;
   } catch {
     return null;
   }
@@ -115,17 +111,10 @@ export default function WalletConnect() {
           const context = await (sdk as unknown as { context: Promise<unknown> }).context.catch(() => null);
           const contextUser = normalizeMiniAppUser((context as { user?: unknown } | null | undefined)?.user);
 
-          // Some hosts may omit optional profile fields. If username/pfp is missing,
-          // fetch from public indexer using fid.
-          if (contextUser?.fid && (!contextUser.username || !contextUser.pfpUrl)) {
+          if (contextUser?.fid) {
             const enriched = await fetchWarpcastUserByFid(contextUser.fid);
             if (cancelled) return;
-            setMiniUser({
-              fid: contextUser.fid,
-              username: contextUser.username ?? enriched?.username,
-              displayName: contextUser.displayName ?? enriched?.displayName,
-              pfpUrl: contextUser.pfpUrl ?? enriched?.pfpUrl,
-            });
+            setMiniUser(enriched ?? contextUser);
           } else {
             setMiniUser(contextUser);
           }
@@ -151,9 +140,7 @@ export default function WalletConnect() {
       ? `@${handle}`
       : miniUser?.displayName
         ? miniUser.displayName
-        : hasFid
-          ? `FID ${fid}`
-          : "Farcaster";
+        : "Farcaster User";
     const pfpSrc = miniUser?.pfpUrl ?? "/icons/icon-150x150.png";
 
     return (

@@ -1,8 +1,18 @@
 {
-  "name": "Yeshua-Christ",
-  "description": "A place to share faith, the Gospel, and the Word of God freely.",
-  "iconUrl": "/icons/icon-300x300.png",
-  "homeUrl": "/",
-  "termsUrl": "/terms",
-  "privacyUrl": "/privacy"
+  "accountAssociation": {
+    "header": "eyJmaWQiOjEwMDEyMDYsInR5cGUiOiJjdXN0b2R5Iiwia2V5IjoiMHhCMkRCZTdkQUI2ZEUzMGRiYzYyNjc0MzA4RUQ2MEYyMTVjNWMxRkNCIn0",
+    "payload": "eyJkb21haW4iOiJ5ZXNodWEtY2hyaXN0LnZlcmNlbC5hcHAifQ",
+    "signature": "+32Fvw3cgBt7k+eogefk2nJUA8zUH9vYSfb/BKGlNg9nYhIAoe4wzkncc8NoO0d53Vy88q233U/6cd+g9W0B8hs="
+  },
+  "miniapp": {
+    "version": "1",
+    "name": "Yeshua-Christ",
+    "description": "A place to share faith, the Gospel, and the Word of God freely.",
+    "iconUrl": "https://yeshua-christ.vercel.app/icons/icon-192x192.png",
+    "homeUrl": "https://yeshua-christ.vercel.app/",
+    "imageUrl": "https://yeshua-christ.vercel.app/og",
+    "buttonTitle": "Open App",
+    "splashImageUrl": "https://yeshua-christ.vercel.app/icons/icon-192x192.png",
+    "splashBackgroundColor": "#000000"
+  }
 }

@@ -21,6 +21,33 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/icons/icon-180x180.png", sizes: "180x180", type: "image/png" }],
   },
+  other: {
+    "fc:miniapp": JSON.stringify({
+      version: "1",
+      imageUrl: "https://yeshua-christ.vercel.app/og",
+      button: {
+        title: "Open App",
+        action: {
+          type: "launch_miniapp",
+          name: "Yeshua-Christ",
+          url: "https://yeshua-christ.vercel.app/",
+        },
+      },
+    }),
+    // Backward compatibility for clients still reading legacy tag
+    "fc:frame": JSON.stringify({
+      version: "1",
+      imageUrl: "https://yeshua-christ.vercel.app/og",
+      button: {
+        title: "Open App",
+        action: {
+          type: "launch_frame",
+          name: "Yeshua-Christ",
+          url: "https://yeshua-christ.vercel.app/",
+        },
+      },
+    }),
+  },
 };
 
 export default function RootLayout({

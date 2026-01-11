@@ -8,11 +8,20 @@
     "version": "1",
     "name": "Yeshua-Christ",
     "description": "A place to share faith, the Gospel, and the Word of God freely.",
+    "subtitle": "Daily Bible Verses and Faith Sharing",
     "iconUrl": "https://yeshua-christ.vercel.app/icons/icon-192x192.png",
     "homeUrl": "https://yeshua-christ.vercel.app/",
     "imageUrl": "https://yeshua-christ.vercel.app/og",
     "buttonTitle": "Open App",
     "splashImageUrl": "https://yeshua-christ.vercel.app/icons/icon-192x192.png",
-    "splashBackgroundColor": "#000000"
+    "splashBackgroundColor": "#000000",
+    "primaryCategory": "Lifestyle",
+    "tags": ["faith", "bible", "christian", "gospel"],
+    "heroImageUrl": "https://yeshua-christ.vercel.app/og",
+    "tagline": "Share the Word of God",
+    "ogTitle": "Yeshua-Christ",
+    "ogDescription": "A place to share faith, the Gospel, and the Word of God freely.",
+    "ogImageUrl": "https://yeshua-christ.vercel.app/og",
+    "castShareUrl": "https://yeshua-christ.vercel.app/"
   }
 }

@@ -85,6 +85,10 @@ const BOOKS: string[] = [
   "Revelation",
 ];
 
+const BOOK_ALIASES: Record<string, string> = {
+  "The Revelation": "Revelation",
+};
+
 function parseChapterVerses(raw: string): Record<number, string> {
   const lines = raw
     .split(/\r?\n/)
@@ -168,8 +172,10 @@ function parseBibleTxtToIndex(txt: string): BibleIndex {
   const bookSet = new Set(BOOKS);
 
   for (const rawLine of lines) {
-    const line = rawLine.trim();
-    if (!line) continue;
+    const rawTrimmed = rawLine.trim();
+    if (!rawTrimmed) continue;
+
+    const line = BOOK_ALIASES[rawTrimmed] ?? rawTrimmed;
 
     if (bookSet.has(line)) {
       commitChapter();
@@ -230,7 +236,7 @@ export default function BiblePage() {
       setError(null);
 
       try {
-        const res = await fetch("/bible/bible.txt", { cache: "no-store" });
+        const res = await fetch("/bible/kjv.txt", { cache: "no-store" });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const text = await res.text();
         if (!cancelled) setRawTxt(text);
@@ -245,7 +251,7 @@ export default function BiblePage() {
         setSelected(null);
         setVersesCache({});
       } catch {
-        if (!cancelled) setError("Could not load bible.txt. Make sure it exists in public/bible/");
+        if (!cancelled) setError("Could not load kjv.txt. Make sure it exists in public/bible/");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -293,19 +299,19 @@ export default function BiblePage() {
         <h2 className="mb-3 text-lg font-semibold">Free Downloads</h2>
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <a
-            href="/bible/bible.pdf"
+            href="/bible/kjv.pdf"
             className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
             PDF
           </a>
           <a
-            href="/bible/bible.doc"
+            href="/bible/kjv.doc"
             className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
             DOCX
           </a>
           <a
-            href="/bible/bible.txt"
+            href="/bible/kjv.txt"
             className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
             TXT
@@ -476,7 +482,7 @@ export default function BiblePage() {
                 </div>
 
                 <p className="text-xs text-stone-600 dark:text-stone-400">
-                  Source: <span className="font-medium">public/bible/bible.txt</span>
+                  Source: <span className="font-medium">public/bible/kjv.txt</span>
                 </p>
               </div>
             )}

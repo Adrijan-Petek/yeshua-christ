@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useCallback, useMemo } from "react";
 import SplashScreen from "../components/SplashScreen";
 import DailyVerse from "../components/DailyVerse";
-import { buildWarpcastComposeUrl, tryComposeCast } from "../lib/farcasterShare";
+import { buildWarpcastComposeUrl, tryAddMiniApp, tryComposeCast } from "../lib/farcasterShare";
 
 export default function Home() {
   const shareUrl =
@@ -34,6 +34,9 @@ export default function Home() {
   const onAddMiniAppClick = useCallback(
     async (e: React.MouseEvent<HTMLAnchorElement>) => {
       e.preventDefault();
+      const added = await tryAddMiniApp();
+      if (added) return;
+
       const ok = await tryComposeCast({
         text: `Add this mini app\n\n${shareUrl}\n\n#YeshuaChrist`,
         embeds: shareEmbeds,

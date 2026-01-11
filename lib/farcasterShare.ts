@@ -44,3 +44,15 @@ export async function tryComposeCast(options: ComposeCastOptions): Promise<boole
     return false;
   }
 }
+
+export async function tryAddMiniApp(): Promise<boolean> {
+  try {
+    const isMiniApp = await sdk.isInMiniApp().catch(() => false);
+    if (!isMiniApp) return false;
+
+    await sdk.actions.addMiniApp();
+    return true;
+  } catch {
+    return false;
+  }
+}

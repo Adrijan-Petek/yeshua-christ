@@ -57,6 +57,28 @@ async function fetchWarpcastUserByFid(fid: number): Promise<MiniAppUser | null> 
   }
 }
 
+async function fetchVerifiedMiniAppUser(): Promise<MiniAppUser | null> {
+  try {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const url = origin ? `${origin}/api/me` : "/api/me";
+    const res = await sdk.quickAuth.fetch(url);
+    if (!res.ok) return null;
+
+    const json = (await res.json()) as { fid?: unknown };
+    const fid = json.fid;
+    if (typeof fid !== "number" || !Number.isFinite(fid)) return null;
+
+    const enriched = await fetchWarpcastUserByFid(fid);
+    return (
+      enriched ?? {
+        fid,
+      }
+    );
+  } catch {
+    return null;
+  }
+}
+
 export default function WalletConnect() {
   const { isAuthenticated, profile } = useProfile();
   const [mounted, setMounted] = useState(false);
@@ -83,22 +105,30 @@ export default function WalletConnect() {
 
       setIsMiniApp(inMiniApp);
       if (inMiniApp) {
-        const context = await (sdk as unknown as { context: Promise<unknown> }).context.catch(() => null);
-        const contextUser = normalizeMiniAppUser((context as { user?: unknown } | null | undefined)?.user);
+        // Prefer Quick Auth (wallet-signed) identity over untrusted context.user.
+        const verified = await fetchVerifiedMiniAppUser();
+        if (cancelled) return;
 
-        // Some hosts may omit optional profile fields. If username/pfp is missing,
-        // fetch from public indexer using fid.
-        if (contextUser?.fid && (!contextUser.username || !contextUser.pfpUrl)) {
-          const enriched = await fetchWarpcastUserByFid(contextUser.fid);
-          if (cancelled) return;
-          setMiniUser({
-            fid: contextUser.fid,
-            username: contextUser.username ?? enriched?.username,
-            displayName: contextUser.displayName ?? enriched?.displayName,
-            pfpUrl: contextUser.pfpUrl ?? enriched?.pfpUrl,
-          });
+        if (verified) {
+          setMiniUser(verified);
         } else {
-          setMiniUser(contextUser);
+          const context = await (sdk as unknown as { context: Promise<unknown> }).context.catch(() => null);
+          const contextUser = normalizeMiniAppUser((context as { user?: unknown } | null | undefined)?.user);
+
+          // Some hosts may omit optional profile fields. If username/pfp is missing,
+          // fetch from public indexer using fid.
+          if (contextUser?.fid && (!contextUser.username || !contextUser.pfpUrl)) {
+            const enriched = await fetchWarpcastUserByFid(contextUser.fid);
+            if (cancelled) return;
+            setMiniUser({
+              fid: contextUser.fid,
+              username: contextUser.username ?? enriched?.username,
+              displayName: contextUser.displayName ?? enriched?.displayName,
+              pfpUrl: contextUser.pfpUrl ?? enriched?.pfpUrl,
+            });
+          } else {
+            setMiniUser(contextUser);
+          }
         }
         setShowModal(false);
       }

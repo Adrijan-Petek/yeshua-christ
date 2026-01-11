@@ -83,7 +83,8 @@ export default function WalletConnect() {
 
       setIsMiniApp(inMiniApp);
       if (inMiniApp) {
-        const contextUser = normalizeMiniAppUser((sdk as unknown as { context?: { user?: unknown } }).context?.user);
+        const context = await (sdk as unknown as { context: Promise<unknown> }).context.catch(() => null);
+        const contextUser = normalizeMiniAppUser((context as { user?: unknown } | null | undefined)?.user);
 
         // Some hosts may omit optional profile fields. If username/pfp is missing,
         // fetch from public indexer using fid.

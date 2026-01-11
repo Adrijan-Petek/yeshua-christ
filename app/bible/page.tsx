@@ -1,120 +1,285 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-type Translation = "KJV" | "WEB";
-
-type Chapter = {
-  chapter: number;
-  verses: Record<number, string>;
+type BibleIndex = {
+  bookNames: string[];
+  chaptersByBook: Record<string, number[]>;
+  rawByBookChapter: Record<string, Record<number, string>>;
 };
-
-type Book = {
-  name: string;
-  chapters: Chapter[];
-};
-
-type BibleData = Record<Translation, Book[]>;
 
 type SelectedVerse = {
-  translation: Translation;
   book: string;
   chapter: number;
   verse: number;
   text: string;
 };
 
-const bible: BibleData = {
-  KJV: [
-    {
-      name: "Genesis",
-      chapters: [
-        {
-          chapter: 1,
-          verses: {
-            1: "In the beginning God created the heaven and the earth.",
-            2: "And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
-            3: "And God said, Let there be light: and there was light.",
-            4: "And God saw the light, that it was good: and God divided the light from the darkness.",
-            5: "And God called the light Day, and the darkness he called Night. And the evening and the morning were the first day.",
-          },
-        },
-      ],
-    },
-    {
-      name: "John",
-      chapters: [
-        {
-          chapter: 3,
-          verses: {
-            16: "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life.",
-            17: "For God sent not his Son into the world to condemn the world; but that the world through him might be saved.",
-          },
-        },
-      ],
-    },
-  ],
-  WEB: [
-    {
-      name: "Genesis",
-      chapters: [
-        {
-          chapter: 1,
-          verses: {
-            1: "In the beginning God created the heavens and the earth.",
-            2: "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters.",
-            3: "God said, \"Let there be light,\" and there was light.",
-            4: "God saw the light, and saw that it was good. God divided the light from the darkness.",
-            5: "God called the light Day, and the darkness he called Night. There was evening and there was morning, the first day.",
-          },
-        },
-      ],
-    },
-    {
-      name: "John",
-      chapters: [
-        {
-          chapter: 3,
-          verses: {
-            16: "For God so loved the world, that he gave his one and only Son, that whoever believes in him should not perish, but have eternal life.",
-            17: "For God didn’t send his Son into the world to judge the world, but that the world should be saved through him.",
-          },
-        },
-      ],
-    },
-  ],
-};
+const BOOKS: string[] = [
+  "Genesis",
+  "Exodus",
+  "Leviticus",
+  "Numbers",
+  "Deuteronomy",
+  "Joshua",
+  "Judges",
+  "Ruth",
+  "1 Samuel",
+  "2 Samuel",
+  "1 Kings",
+  "2 Kings",
+  "1 Chronicles",
+  "2 Chronicles",
+  "Ezra",
+  "Nehemiah",
+  "Esther",
+  "Job",
+  "Psalms",
+  "Proverbs",
+  "Ecclesiastes",
+  "Song of Solomon",
+  "Isaiah",
+  "Jeremiah",
+  "Lamentations",
+  "Ezekiel",
+  "Daniel",
+  "Hosea",
+  "Joel",
+  "Amos",
+  "Obadiah",
+  "Jonah",
+  "Micah",
+  "Nahum",
+  "Habakkuk",
+  "Zephaniah",
+  "Haggai",
+  "Zechariah",
+  "Malachi",
+  "Matthew",
+  "Mark",
+  "Luke",
+  "John",
+  "Acts",
+  "Romans",
+  "1 Corinthians",
+  "2 Corinthians",
+  "Galatians",
+  "Ephesians",
+  "Philippians",
+  "Colossians",
+  "1 Thessalonians",
+  "2 Thessalonians",
+  "1 Timothy",
+  "2 Timothy",
+  "Titus",
+  "Philemon",
+  "Hebrews",
+  "James",
+  "1 Peter",
+  "2 Peter",
+  "1 John",
+  "2 John",
+  "3 John",
+  "Jude",
+  "Revelation",
+];
 
 function composeUrl(text: string) {
   return `https://warpcast.com/~/compose?text=${encodeURIComponent(text)}`;
 }
 
+function parseChapterVerses(raw: string): Record<number, string> {
+  const lines = raw
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.trim().length > 0);
+
+  const bookSet = new Set(BOOKS);
+  const cleaned: string[] = [];
+
+  for (const line of lines) {
+    const t = line.trim();
+    if (/^\d+$/.test(t)) continue;
+    if (/^(?:CONTENTS|Contents)$/i.test(t)) continue;
+
+    // Drop common PDF/TXT page headers like "4 Genesis" or "Genesis 5".
+    const tokens = t.split(/\s+/);
+    if (tokens.length === 2) {
+      const [a, b] = tokens;
+      if (/^\d+$/.test(a) && bookSet.has(b)) continue;
+      if (bookSet.has(a) && /^\d+$/.test(b)) continue;
+    }
+
+    cleaned.push(line);
+  }
+
+  const text = cleaned.join("\n");
+
+  // Preferred (CCEL/KJV-style) verse markers: lines starting with "^2And ...".
+  const caretVerseRegex = /(?:^|\n)\^(\d{1,3})\s*/g;
+  const caretMatches = Array.from(text.matchAll(caretVerseRegex));
+
+  // Fallback for other TXT formats: verse numbers at line start or embedded after punctuation.
+  // Example: "... earth. 12 And the earth ..."
+  const fallbackVerseRegex = /(?:^|\n|[.?!]\s)(\d{1,3})\s+/g;
+  const matches = caretMatches.length > 0 ? caretMatches : Array.from(text.matchAll(fallbackVerseRegex));
+
+  const verses: Record<number, string> = {};
+
+  if (matches.length === 0) {
+    if (text.trim()) verses[1] = text.trim();
+    return verses;
+  }
+
+  const first = matches[0];
+  const firstVerseNumber = Number(first[1]);
+  const firstStart = first.index ?? 0;
+  const pre = text.slice(0, firstStart).trim();
+  if (pre && firstVerseNumber !== 1) {
+    verses[1] = pre;
+  }
+
+  for (let i = 0; i < matches.length; i++) {
+    const current = matches[i];
+    const verse = Number(current[1]);
+    const start = (current.index ?? 0) + current[0].length;
+    const end = i + 1 < matches.length ? (matches[i + 1].index ?? text.length) : text.length;
+    const body = text.slice(start, end).trim();
+    if (body) verses[verse] = body;
+  }
+
+  return verses;
+}
+
+function parseBibleTxtToIndex(txt: string): BibleIndex {
+  const lines = txt.split(/\r?\n/);
+  const rawByBookChapter: BibleIndex["rawByBookChapter"] = {};
+
+  let currentBook: string | null = null;
+  let currentChapter: number | null = null;
+  let chapterBuffer: string[] = [];
+
+  function commitChapter() {
+    if (!currentBook || !currentChapter) return;
+    const raw = chapterBuffer.join("\n").trim();
+    if (!raw) return;
+
+    if (!rawByBookChapter[currentBook]) rawByBookChapter[currentBook] = {};
+    rawByBookChapter[currentBook][currentChapter] = raw;
+  }
+
+  const bookSet = new Set(BOOKS);
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (!line) continue;
+
+    if (bookSet.has(line)) {
+      commitChapter();
+      currentBook = line;
+      currentChapter = null;
+      chapterBuffer = [];
+      continue;
+    }
+
+    const chapMatch = line.match(/\bChapter\s+(\d{1,3})\b/i);
+    if (chapMatch && currentBook) {
+      commitChapter();
+      currentChapter = Number(chapMatch[1]);
+      chapterBuffer = [];
+      continue;
+    }
+
+    if (currentBook && currentChapter) {
+      chapterBuffer.push(rawLine);
+    }
+  }
+
+  commitChapter();
+
+  const bookNames = BOOKS.filter((b) => rawByBookChapter[b] && Object.keys(rawByBookChapter[b]).length > 0);
+  const chaptersByBook: Record<string, number[]> = {};
+  for (const b of bookNames) {
+    const chapterNums = Object.keys(rawByBookChapter[b] ?? {})
+      .map((n) => Number(n))
+      .filter((n) => Number.isFinite(n))
+      .sort((a, c) => a - c);
+    chaptersByBook[b] = chapterNums;
+  }
+
+  return { bookNames, chaptersByBook, rawByBookChapter };
+}
+
 export default function BiblePage() {
-  const [translation, setTranslation] = useState<Translation>("KJV");
+  const [index, setIndex] = useState<BibleIndex | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const books = useMemo(() => bible[translation], [translation]);
-  const [bookName, setBookName] = useState(books[0]?.name ?? "Genesis");
+  const [readerTab, setReaderTab] = useState<"pdf" | "text">("pdf");
+  const [rawTxt, setRawTxt] = useState<string>("");
+  const [versesCache, setVersesCache] = useState<Record<string, Record<number, string>>>({});
 
-  const book = useMemo(
-    () => books.find((b) => b.name === bookName) ?? books[0],
-    [books, bookName],
-  );
-
-  const chapters = book?.chapters ?? [];
-  const [chapterNumber, setChapterNumber] = useState(chapters[0]?.chapter ?? 1);
-
-  const chapter = useMemo(
-    () => chapters.find((c) => c.chapter === chapterNumber) ?? chapters[0],
-    [chapters, chapterNumber],
-  );
-
-  const verses = useMemo(() => {
-    const entries = Object.entries(chapter?.verses ?? {}).map(([k, v]) => [Number(k), v] as const);
-    entries.sort((a, b) => a[0] - b[0]);
-    return entries;
-  }, [chapter]);
-
+  const [bookName, setBookName] = useState<string>("Genesis");
+  const [chapterNumber, setChapterNumber] = useState<number>(1);
   const [selected, setSelected] = useState<SelectedVerse | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function load() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const res = await fetch("/bible/bible.txt", { cache: "no-store" });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        if (!cancelled) setRawTxt(text);
+        const nextIndex = parseBibleTxtToIndex(text);
+        if (cancelled) return;
+
+        setIndex(nextIndex);
+        const firstBook = nextIndex.bookNames[0] ?? "Genesis";
+        setBookName(firstBook);
+        const firstChapter = nextIndex.chaptersByBook[firstBook]?.[0] ?? 1;
+        setChapterNumber(firstChapter);
+        setSelected(null);
+        setVersesCache({});
+      } catch {
+        if (!cancelled) setError("Could not load bible.txt. Make sure it exists in public/bible/");
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const books = useMemo(() => index?.bookNames ?? [], [index]);
+  const chapters = useMemo(() => (index ? index.chaptersByBook[bookName] ?? [] : []), [index, bookName]);
+  const cacheKey = useMemo(() => `${bookName}::${chapterNumber}`, [bookName, chapterNumber]);
+  const versesMap = useMemo(() => versesCache[cacheKey] ?? {}, [versesCache, cacheKey]);
+  const verses = useMemo(() => {
+    const entries = Object.entries(versesMap)
+      .map(([k, v]) => [Number(k), v] as const)
+      .filter(([n]) => Number.isFinite(n))
+      .sort((a, b) => a[0] - b[0]);
+    return entries;
+  }, [versesMap]);
+
+  useEffect(() => {
+    if (!index) return;
+    if (versesCache[cacheKey]) return;
+
+    const raw = index.rawByBookChapter[bookName]?.[chapterNumber];
+    if (!raw) return;
+
+    const parsed = parseChapterVerses(raw);
+    setVersesCache((prev) => ({ ...prev, [cacheKey]: parsed }));
+  }, [index, versesCache, cacheKey, bookName, chapterNumber]);
 
   return (
     <div className="space-y-8">
@@ -135,10 +300,10 @@ export default function BiblePage() {
             PDF
           </a>
           <a
-            href="/bible/bible.epub"
-            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700 opacity-50"
+            href="/bible/bible.doc"
+            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
-            EPUB (Coming Soon)
+            DOCX
           </a>
           <a
             href="/bible/bible.txt"
@@ -148,146 +313,171 @@ export default function BiblePage() {
           </a>
         </div>
         <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
-          Files available: AUTHORIZED KING JAMES VERSION 1611.pdf and .txt in <span className="font-medium">public/bible/</span>.
+          Files are served from <span className="font-medium">public/bible/</span>.
         </p>
       </section>
 
       <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-black">
-        <h2 className="mb-3 text-lg font-semibold">PDF Reader</h2>
-        <div className="w-full">
-          <iframe
-            src="/bible/bible.pdf"
-            width="100%"
-            height="600"
-            className="border border-stone-200 rounded-lg dark:border-stone-700"
-            title="Bible PDF Reader"
-          />
-        </div>
-        <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
-          View the Bible directly in your browser. Download available above if needed.
-        </p>
-      </section>
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="text-lg font-semibold">Reader</h2>
+            <p className="text-sm text-stone-600 dark:text-stone-400">Choose PDF or verse-by-verse text.</p>
+          </div>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-black">
-        <h2 className="mb-4 text-lg font-semibold">Online Reading</h2>
-
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <select
-            value={translation}
-            onChange={(e) => {
-              const next = e.target.value as Translation;
-              setTranslation(next);
-              const firstBook = bible[next][0];
-              setBookName(firstBook?.name ?? "Genesis");
-              setChapterNumber(firstBook?.chapters[0]?.chapter ?? 1);
-              setSelected(null);
-            }}
-            className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
-          >
-            <option value="KJV">KJV</option>
-            <option value="WEB">WEB</option>
-          </select>
-
-          <select
-            value={bookName}
-            onChange={(e) => {
-              const nextBook = e.target.value;
-              setBookName(nextBook);
-              const b = books.find((x) => x.name === nextBook);
-              setChapterNumber(b?.chapters[0]?.chapter ?? 1);
-              setSelected(null);
-            }}
-            className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
-          >
-            {books.map((b) => (
-              <option key={b.name} value={b.name}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-
-          <select
-            value={chapterNumber}
-            onChange={(e) => {
-              setChapterNumber(Number(e.target.value));
-              setSelected(null);
-            }}
-            className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
-          >
-            {chapters.map((c) => (
-              <option key={c.chapter} value={c.chapter}>
-                Chapter {c.chapter}
-              </option>
-            ))}
-          </select>
+          <div className="inline-flex w-full rounded-xl border border-stone-200 bg-white p-1 dark:border-stone-800 dark:bg-black sm:w-auto">
+            <button
+              type="button"
+              onClick={() => setReaderTab("pdf")}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors sm:flex-none ${
+                readerTab === "pdf"
+                  ? "bg-stone-100 text-stone-900 dark:bg-stone-900 dark:text-stone-100"
+                  : "text-stone-600 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-900"
+              }`}
+            >
+              PDF
+            </button>
+            <button
+              type="button"
+              onClick={() => setReaderTab("text")}
+              className={`flex-1 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors sm:flex-none ${
+                readerTab === "text"
+                  ? "bg-stone-100 text-stone-900 dark:bg-stone-900 dark:text-stone-100"
+                  : "text-stone-600 hover:bg-stone-50 dark:text-stone-300 dark:hover:bg-stone-900"
+              }`}
+            >
+              Text
+            </button>
+          </div>
         </div>
 
-        <div className="mt-5 space-y-3">
-          {verses.map(([n, text]) => {
-            const isSelected =
-              selected?.translation === translation &&
-              selected?.book === book?.name &&
-              selected?.chapter === chapter?.chapter &&
-              selected?.verse === n;
+        {readerTab === "pdf" && (
+          <div className="w-full">
+            <iframe
+              src="/bible/bible.pdf"
+              width="100%"
+              height="650"
+              className="rounded-lg border border-stone-200 dark:border-stone-700"
+              title="Bible PDF Reader"
+            />
+            <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
+              View the Bible directly in your browser.
+            </p>
+          </div>
+        )}
 
-            return (
-              <button
-                key={n}
-                type="button"
-                onClick={() =>
-                  setSelected({
-                    translation,
-                    book: book?.name ?? "",
-                    chapter: chapter?.chapter ?? 0,
-                    verse: n,
-                    text,
-                  })
-                }
-                className={`w-full rounded-xl border px-4 py-3 text-left text-sm shadow-sm transition-colors ${
-                  isSelected
-                    ? "border-stone-300 bg-stone-100 dark:border-stone-600 dark:bg-stone-800"
-                    : "border-stone-200 bg-stone-50 hover:bg-stone-100 dark:border-stone-700 dark:bg-black dark:hover:bg-stone-800"
-                }`}
-              >
-                <span className="font-semibold text-stone-800 dark:text-stone-200">{n}</span>
-                <span className="ml-3 text-stone-800 dark:text-stone-200">{text}</span>
-              </button>
-            );
-          })}
-        </div>
+        {readerTab === "text" && (
+          <div className="space-y-4">
+            {loading && <p className="text-sm text-stone-600 dark:text-stone-400">Loading…</p>}
+            {error && <p className="text-sm text-red-700 dark:text-red-400">{error}</p>}
 
-        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-stone-600 dark:text-stone-400">
-            Tip: tap a verse to select it for sharing.
-          </p>
+            {!loading && !error && !index && (
+              <p className="text-sm text-stone-600 dark:text-stone-400">
+                No index available yet.
+              </p>
+            )}
 
-          <a
-            href={
-              selected
-                ? composeUrl(
-                    `${selected.book} ${selected.chapter}:${selected.verse} (${selected.translation})\n\n${selected.text}\n\n#YeshuaChrist`,
-                  )
-                : "#"
-            }
-            onClick={(e) => {
-              if (!selected) e.preventDefault();
-            }}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-medium shadow-sm ${
-              selected
-                ? "border-stone-200 bg-stone-50 hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
-                : "border-stone-200 bg-stone-50 opacity-50 dark:border-stone-700 dark:bg-stone-800"
-            }`}
-          >
-            Share to Farcaster
-          </a>
-        </div>
+            {!loading && !error && index && (
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <select
+                    value={bookName}
+                    onChange={(e) => {
+                      const nextBook = e.target.value;
+                      setBookName(nextBook);
+                      const nextChapter = index.chaptersByBook[nextBook]?.[0] ?? 1;
+                      setChapterNumber(nextChapter);
+                      setSelected(null);
+                    }}
+                    className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
+                  >
+                    {books.map((b) => (
+                      <option key={b} value={b}>
+                        {b}
+                      </option>
+                    ))}
+                  </select>
 
-        <p className="mt-4 text-xs text-stone-600 dark:text-stone-400">
-          Note: this demo includes a small built-in sample for KJV/WEB. To add full text, replace the
-          in-page dataset with your preferred public-domain source.
-        </p>
+                  <select
+                    value={chapterNumber}
+                    onChange={(e) => {
+                      setChapterNumber(Number(e.target.value));
+                      setSelected(null);
+                    }}
+                    className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
+                  >
+                    {chapters.map((c) => (
+                      <option key={c} value={c}>
+                        Chapter {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="space-y-3">
+              {verses.length === 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-stone-600 dark:text-stone-400">
+                    Verse parsing is not available for this chapter. Showing raw chapter text instead.
+                  </p>
+                  <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-stone-950">
+                    <pre className="max-h-[70vh] overflow-auto whitespace-pre-wrap text-sm leading-relaxed text-stone-900 dark:text-stone-100">
+                      {index.rawByBookChapter[bookName]?.[chapterNumber] ?? rawTxt}
+                    </pre>
+                  </div>
+                </div>
+              )}
+
+              {verses.map(([n, text]) => {
+                const isSelected =
+                  selected?.book === bookName &&
+                  selected?.chapter === chapterNumber &&
+                  selected?.verse === n;
+
+                return (
+                  <div key={n} className="space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelected({ book: bookName, chapter: chapterNumber, verse: n, text })}
+                      className={`w-full rounded-xl border px-4 py-3 text-left text-sm shadow-sm transition-colors ${
+                        isSelected
+                          ? "border-stone-300 bg-stone-100 dark:border-stone-600 dark:bg-stone-800"
+                          : "border-stone-200 bg-stone-50 hover:bg-stone-100 dark:border-stone-700 dark:bg-black dark:hover:bg-stone-800"
+                      }`}
+                    >
+                      <span className="font-semibold text-stone-800 dark:text-stone-200">{n}</span>
+                      <span className="ml-3 text-stone-800 dark:text-stone-200">{text}</span>
+                    </button>
+
+                    {isSelected && (
+                      <a
+                        href={composeUrl(
+                          `${bookName} ${chapterNumber}:${n} (KJV)\n\n${text}\n\n#YeshuaChrist`,
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+                      >
+                        Share to Farcaster
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+                </div>
+
+                <div>
+                  <p className="text-xs text-stone-600 dark:text-stone-400">
+                    Tip: tap a verse to select it for sharing.
+                  </p>
+                </div>
+
+                <p className="text-xs text-stone-600 dark:text-stone-400">
+                  Source: <span className="font-medium">public/bible/bible.txt</span>
+                </p>
+              </div>
+            )}
+          </div>
+        )}
       </section>
     </div>
   );

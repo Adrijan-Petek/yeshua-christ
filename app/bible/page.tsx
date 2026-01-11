@@ -136,9 +136,9 @@ export default function BiblePage() {
           </a>
           <a
             href="/bible/bible.epub"
-            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700 opacity-50"
           >
-            EPUB
+            EPUB (Coming Soon)
           </a>
           <a
             href="/bible/bible.txt"
@@ -148,7 +148,7 @@ export default function BiblePage() {
           </a>
         </div>
         <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
-          Place your files in <span className="font-medium">public/bible/</span> with these names.
+          Files available: AUTHORIZED KING JAMES VERSION 1611.pdf and .txt in <span className="font-medium">public/bible/</span>.
         </p>
       </section>
 

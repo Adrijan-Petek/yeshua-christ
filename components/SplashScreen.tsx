@@ -8,6 +8,7 @@ type SplashScreenProps = {
 };
 
 const LOGO_SRC = "/logo/yeshua-christ.png";
+const ICON_SRC = "/icons/icon-192x192.png";
 const DURATION_MS = 3200;
 
 export default function SplashScreen({ onComplete }: SplashScreenProps) {
@@ -33,10 +34,10 @@ export default function SplashScreen({ onComplete }: SplashScreenProps) {
       <div className="text-center space-y-6">
         <div className="yc-splash-logo">
           <Image
-            src={LOGO_SRC}
+            src={ICON_SRC}
             alt="Yeshua-Christ"
-            width={220}
-            height={220}
+            width={192}
+            height={192}
             priority
             className="rounded-2xl shadow-lg mx-auto drop-shadow-2xl animate-bounce"
           />

@@ -300,25 +300,28 @@ export default function BiblePage() {
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
           <a
             href="/bible/kjv.pdf"
+            download="KJV-Bible.pdf"
             className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2.5 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
-            PDF
+            📥 Download PDF
           </a>
           <a
             href="/bible/kjv.doc"
+            download="KJV-Bible.doc"
             className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2.5 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
-            DOCX
+            📥 Download DOCX
           </a>
           <a
             href="/bible/kjv.txt"
+            download="KJV-Bible.txt"
             className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2.5 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
-            TXT
+            📥 Download TXT
           </a>
         </div>
         <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
-          Files are served from <span className="font-medium">public/bible/</span>.
+          Click buttons above to download Bible files for offline reading.
         </p>
       </section>
 
@@ -357,13 +360,25 @@ export default function BiblePage() {
 
         {readerTab === "pdf" && (
           <div className="w-full">
-            <iframe
-              src="/bible/kjv.pdf#toolbar=0"
+            <object
+              data="/bible/kjv.pdf#toolbar=0&navpanes=0&scrollbar=1&view=FitH"
+              type="application/pdf"
               width="100%"
               height="650"
               className="rounded-lg border border-stone-200 dark:border-stone-700"
-              title="Bible PDF Reader"
-            />
+            >
+              <iframe
+                src="/bible/kjv.pdf#toolbar=0&navpanes=0&scrollbar=1&view=FitH"
+                width="100%"
+                height="650"
+                className="rounded-lg"
+                title="Bible PDF Reader"
+              >
+                <p className="p-4 text-sm text-stone-600 dark:text-stone-400">
+                  Your browser doesn't support PDF viewing. Please use the download buttons above to get the PDF.
+                </p>
+              </iframe>
+            </object>
             <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
               View the Bible directly in your browser. Use the download buttons above to save a copy.
             </p>

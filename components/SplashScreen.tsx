@@ -7,7 +7,6 @@ type SplashScreenProps = {
   onComplete?: () => void;
 };
 
-const LOGO_SRC = "/logo/yeshua-christ.png";
 const ICON_SRC = "/icons/icon-192x192.png";
 const DURATION_MS = 3200;
 

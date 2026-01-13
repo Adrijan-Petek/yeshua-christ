@@ -375,7 +375,7 @@ export default function BiblePage() {
                 title="Bible PDF Reader"
               >
                 <p className="p-4 text-sm text-stone-600 dark:text-stone-400">
-                  Your browser doesn't support PDF viewing. Please use the download buttons above to get the PDF.
+                  Your browser doesn&apos;t support PDF viewing. Please use the download buttons above to get the PDF.
                 </p>
               </iframe>
             </object>

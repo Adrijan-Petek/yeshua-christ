@@ -287,32 +287,32 @@ export default function BiblePage() {
   }, [index, versesCache, cacheKey, bookName, chapterNumber]);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 px-4">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-stone-950 dark:text-amber-300">
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-stone-950 dark:text-amber-300">
           The Holy Bible
         </h1>
-        <p className="text-stone-700 dark:text-stone-300">Free to read and download. No tracking.</p>
+        <p className="text-sm sm:text-base text-stone-700 dark:text-stone-300">Free to read and download. No tracking.</p>
       </header>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-black">
-        <h2 className="mb-3 text-lg font-semibold">Free Downloads</h2>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <section className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5 shadow-sm dark:border-stone-700 dark:bg-black">
+        <h2 className="mb-3 text-base sm:text-lg font-semibold">Free Downloads</h2>
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
           <a
             href="/bible/kjv.pdf"
-            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+            className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2.5 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
             PDF
           </a>
           <a
             href="/bible/kjv.doc"
-            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+            className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2.5 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
             DOCX
           </a>
           <a
             href="/bible/kjv.txt"
-            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-3 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+            className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2.5 text-center text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
             TXT
           </a>
@@ -322,11 +322,11 @@ export default function BiblePage() {
         </p>
       </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-black">
+      <section className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5 shadow-sm dark:border-stone-700 dark:bg-black">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold">Reader</h2>
-            <p className="text-sm text-stone-600 dark:text-stone-400">Choose PDF or verse-by-verse text.</p>
+            <h2 className="text-base sm:text-lg font-semibold">Reader</h2>
+            <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">Choose PDF or verse-by-verse text.</p>
           </div>
 
           <div className="inline-flex w-full rounded-xl border border-stone-200 bg-white p-1 dark:border-stone-800 dark:bg-black sm:w-auto">
@@ -358,14 +358,14 @@ export default function BiblePage() {
         {readerTab === "pdf" && (
           <div className="w-full">
             <iframe
-              src="/bible/kjv.pdf"
+              src="/bible/kjv.pdf#toolbar=0"
               width="100%"
               height="650"
               className="rounded-lg border border-stone-200 dark:border-stone-700"
               title="Bible PDF Reader"
             />
             <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
-              View the Bible directly in your browser.
+              View the Bible directly in your browser. Use the download buttons above to save a copy.
             </p>
           </div>
         )}

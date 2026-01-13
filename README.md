@@ -36,35 +36,54 @@ This project exists solely to glorify Christ and spread His message without mone
 - Daily verse display with automatic fetching
 - One-click sharing to Farcaster with recast functionality
 - Christ-centered content sharing
+- Live Farcaster feed with #YeshuaChrist posts
+- Community rules and guidelines
 
 ### 📖 Bible Reader
-- Online Bible reading with verse navigation
-- PDF and TXT download options for offline access
-- Verse parsing and sharing capabilities
+- **Interactive Bible Reading**: Full KJV Bible with verse-by-verse navigation
+- **Multiple Formats**: Read online via PDF viewer or interactive text mode
+- **Free Downloads**: PDF, DOCX, and TXT formats available
+- **Verse Sharing**: Select and share individual verses to Farcaster
+- **Mobile-Optimized PDF**: Displays inline on phones (no auto-download)
+- **Smart Navigation**: Jump to any book and chapter instantly
 
 ### 🎥 Video Library
 - Curated YouTube embeds for sermons, worship, and Bible studies
 - Admin-gated video addition for quality control
 - Category-based organization (Sermon, Worship, Testimony, Bible Study)
+- Responsive video cards with inline playback
+- One-click sharing to Farcaster
 
-### 🔐 Wallet Integration
-- Farcaster AuthKit integration for seamless authentication
-- Profile display with username and avatar
-- Secure wallet connection for sharing features
+### 🔐 Wallet Integration & Identity
+- **Farcaster Mini App SDK**: Full integration with Quick Auth
+- **Wallet-Based Identity**: Username and profile picture fetched from connected wallet
+- **Secure Authentication**: JWT verification on backend
+- **Profile Display**: Shows real Farcaster username, display name, and avatar
+- **Fallback Chain**: Quick Auth → SDK context → Warpcast API enrichment
 
 ### 🎨 User Experience
-- Dark/Light theme toggle with persistence
-- Mobile-responsive design
-- Professional UI with Tailwind CSS
-- Splash screen for first-time visitors
+- **Mobile-First Design**: Optimized for phone screens
+- **Responsive Layout**: Adapts seamlessly from mobile to desktop
+- **Dark/Light Theme**: Toggle with localStorage persistence
+- **Professional UI**: Clean, modern design with Tailwind CSS
+- **Fast Loading**: Splash screen with smooth animations
+- **Consistent Spacing**: Uniform button sizes and padding throughout
+- **Accessible**: WCAG-compliant color contrasts and tap targets
 
 ## 🛠️ Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router, TypeScript)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with custom themes
-- **Authentication**: [Farcaster AuthKit](https://docs.farcaster.xyz/auth-kit/introduction) + wagmi + viem
-- **State Management**: React Query for data fetching
-- **Deployment**: [Vercel](https://vercel.com/)
+- **Framework**: [Next.js 16.1.1](https://nextjs.org/) (App Router, React 19, TypeScript)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with custom themes and dark mode
+- **Farcaster Integration**: 
+  - [@farcaster/miniapp-sdk](https://github.com/farcaster/miniapp-sdk) v0.2.1 - Mini App SDK with Quick Auth
+  - [@farcaster/auth-kit](https://docs.farcaster.xyz/auth-kit/introduction) v0.8.1 - QR sign-in fallback
+  - [@farcaster/quick-auth](https://github.com/farcaster/quick-auth) - Server-side JWT verification
+- **Wallet**: wagmi v2.14.3 + viem v2.22.5 for Web3 interactions
+- **State Management**: React hooks and context
+- **APIs**:
+  - Warpcast API for user profiles and feed
+  - Farcaster Hub API for on-chain data
+- **Deployment**: [Vercel](https://vercel.com/) with Edge Runtime
 - **CI/CD**: GitHub Actions
 - **Linting**: ESLint with TypeScript rules
 
@@ -95,8 +114,9 @@ This project exists solely to glorify Christ and spread His message without mone
    NEXT_PUBLIC_APP_URL=https://yeshua-christ.vercel.app
    NEXT_PUBLIC_DOMAIN=yeshua-christ.vercel.app
    NEXT_PUBLIC_SIWE_URI=https://yeshua-christ.vercel.app
-   NEXT_BIBLES_API_KEY=your_api_key_here
    ```
+
+   **Note**: No API keys required! The app uses public endpoints.
 
 4. **Run the development server**
    ```bash
@@ -109,21 +129,36 @@ This project exists solely to glorify Christ and spread His message without mone
 
 ### Available Scripts
 
-- `npm run dev` - Start development server
+- `npm run dev` - Start development server with Turbopack
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript type checking
+- `npm run type-check` - Run TypeScript type checking (if configured)
 
 ## 📱 Usage
 
 ### For Users
 
 1. **Home Page**: View the daily verse and navigate to different sections
-2. **Faith Section**: Share testimonies and Christ-centered content
-3. **Bible Section**: Read the Bible online or download for offline use
+2. **Faith Section**: Share testimonies, view community feed, and post Christ-centered content
+3. **Bible Section**: 
+   - Switch between PDF and interactive text reader
+   - Download Bible in PDF, DOCX, or TXT format
+   - Select verses and share to Farcaster
 4. **Videos Section**: Watch curated sermons and worship content
-5. **Wallet Connection**: Connect your Farcaster wallet to enable sharing features
+5. **Wallet Connection**: 
+   - Connect your Farcaster wallet to enable sharing features
+   - Your username and profile picture are automatically displayed
+   - Quick Auth provides secure, wallet-verified identity
+
+### Mobile Experience
+
+The app is fully optimized for mobile devices:
+- **PDF Viewer**: Displays inline on phones (no forced downloads)
+- **Touch-Friendly**: All buttons optimized for tap targets
+- **Responsive Text**: Scales appropriately on small screens
+- **Compact Layout**: Reduced spacing for better mobile UX
+- **Fast Loading**: Optimized splash screen (80x80 icon)
 
 ### For Admins
 
@@ -140,8 +175,9 @@ Access admin features by clicking the logo 10 times on the home page:
    - `NEXT_PUBLIC_APP_URL`
    - `NEXT_PUBLIC_DOMAIN`
    - `NEXT_PUBLIC_SIWE_URI`
-   - `NEXT_BIBLES_API_KEY`
 3. **Deploy** - Vercel will handle the build and deployment automatically
+
+**Note**: For Farcaster Mini App deployment, ensure your app is registered at [https://warpcast.com/~/developers/mini-apps](https://warpcast.com/~/developers/mini-apps)
 
 ### Manual Deployment
 
@@ -175,9 +211,21 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Thanks to the Farcaster community for the authentication tools
-- Bible API provided by [Daily Bible](https://dailybible.ca/)
+- Thanks to the Farcaster community for the authentication tools and Mini App SDK
+- Warpcast API for user profiles and feed integration
+- King James Bible (KJV) - Public Domain
 - Icons and assets designed with faith and reverence
+
+## 🔧 Recent Updates
+
+### January 2025 - Mobile Optimization Release
+- **Identity Resolution**: Implemented wallet-based identity with Quick Auth and JWT verification
+- **Mobile-First Redesign**: Comprehensive mobile optimization across all pages
+- **PDF Viewer Fix**: Bible PDF now displays inline on mobile devices (no auto-download)
+- **Responsive Components**: All buttons, spacing, and text sizes optimized for phones
+- **Splash Screen**: Reduced logo size (128→80px) for better mobile experience
+- **Consistent Design**: Unified button padding, rounded corners, and spacing throughout
+- **Performance**: Build optimized and verified for production deployment
 
 ## 📞 Contact
 

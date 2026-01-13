@@ -64,54 +64,54 @@ export default function Home() {
     <div>
       <SplashScreen />
 
-      <section className="mx-auto flex max-w-3xl flex-col items-center text-center">
-        <div className="mb-8">
+      <section className="mx-auto flex max-w-3xl flex-col items-center text-center px-4">
+        <div className="mb-6">
           <Image
             src="/icons/icon-150x150.png"
             alt="Yeshua-Christ"
-            width={150}
-            height={150}
+            width={96}
+            height={96}
             priority
-            className="rounded-3xl shadow-lg"
+            className="rounded-2xl shadow-lg"
           />
         </div>
 
-        <p className="mb-10 max-w-2xl text-lg leading-relaxed text-stone-700 dark:text-stone-200">
+        <p className="mb-8 max-w-2xl text-base sm:text-lg leading-relaxed text-stone-700 dark:text-stone-200">
           “A place to share faith, the Gospel, and the Word of God freely.”
         </p>
 
-        <div className="grid w-full grid-cols-1 gap-4 sm:grid-cols-3 max-w-lg">
+        <div className="grid w-full grid-cols-1 gap-3 sm:grid-cols-3 max-w-lg">
           <Link
             href="/faith"
-            className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
+            className="rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
           >
-            Go to Faith
+            Faith
           </Link>
           <Link
             href="/videos"
-            className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
+            className="rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
           >
-            Go to Videos
+            Videos
           </Link>
           <Link
             href="/bible"
-            className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
+            className="rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
           >
-            Go to Bible
+            Bible
           </Link>
         </div>
 
-        <div className="mt-12 w-full max-w-2xl">
+        <div className="mt-10 w-full max-w-2xl">
           <DailyVerse />
         </div>
 
-        <div className="mt-8 grid w-full max-w-lg grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="mt-6 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">
           <a
             href={addMiniAppHref}
             onClick={onAddMiniAppClick}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
+            className="rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
           >
             Add Mini App
           </a>
@@ -120,7 +120,7 @@ export default function Home() {
             onClick={onRecastAppClick}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-2xl border border-stone-200 bg-white px-6 py-4 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
+            className="rounded-xl border border-stone-200 bg-white px-5 py-3 text-sm font-semibold text-stone-900 shadow-md transition-colors hover:bg-stone-50 dark:border-stone-800 dark:bg-stone-950 dark:text-stone-100 dark:hover:bg-stone-900"
           >
             Recast App
           </a>

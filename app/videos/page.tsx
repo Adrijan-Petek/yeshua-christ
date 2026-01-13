@@ -111,32 +111,32 @@ export default function VideosPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 px-4">
       <header className="space-y-2">
-        <h1 className="text-3xl font-semibold tracking-tight text-stone-950 dark:text-amber-300">
+        <h1 className="text-2xl sm:text-3xl font-semibold tracking-tight text-stone-950 dark:text-amber-300">
           Videos
         </h1>
-        <p className="text-stone-700 dark:text-stone-300">
+        <p className="text-sm sm:text-base text-stone-700 dark:text-stone-300">
           Share worship music videos that glorify Christ.
         </p>
       </header>
 
       {isAdmin && (
-      <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700 dark:bg-black">
-        <h2 className="mb-3 text-lg font-semibold">Add a YouTube link</h2>
+      <section className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5 shadow-sm dark:border-stone-700 dark:bg-black">
+        <h2 className="mb-3 text-base sm:text-lg font-semibold">Add a YouTube link</h2>
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1fr_180px_120px]">
+        <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[1fr_150px_110px]">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Paste YouTube video or playlist link"
-            className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
+            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
           />
 
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as Category)}
-            className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
+            className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
           >
             {categories.map((c) => (
               <option key={c} value={c}>
@@ -149,22 +149,22 @@ export default function VideosPage() {
             type="button"
             onClick={add}
             disabled={!canAdd}
-            className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+            className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
           >
             Embed
           </button>
         </div>
 
-        {error && <p className="mt-2 text-sm text-red-700">{error}</p>}
+        {error && <p className="mt-2 text-xs sm:text-sm text-red-700">{error}</p>}
       </section>
       )}
 
-      <section className="space-y-4">
+      <section className="space-y-3.5">
         {videos.length === 0 && (
-          <p className="text-sm text-stone-600 dark:text-stone-400">No videos added yet.</p>
+          <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">No videos added yet.</p>
         )}
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {videos.map((v) => {
             const isPlaylist = v.embedUrl.includes('videoseries');
 
@@ -181,11 +181,11 @@ export default function VideosPage() {
             return (
             <article
               key={v.id}
-              className={`overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-black ${
+              className={`overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm dark:border-stone-700 dark:bg-black ${
                 isPlaylist ? 'sm:col-span-2 lg:col-span-3' : ''
               }`}
             >
-              <div className="w-full bg-stone-100 dark:bg-black" style={{ height: '360px' }}>
+              <div className="w-full bg-stone-100 dark:bg-black" style={{ height: isPlaylist ? '450px' : '280px' }}>
                 <iframe
                   className="h-full w-full"
                   src={v.embedUrl}
@@ -196,9 +196,9 @@ export default function VideosPage() {
                 />
               </div>
 
-              <div className="space-y-3 p-4">
+              <div className="space-y-2.5 p-3.5">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="rounded-full border border-stone-200 bg-stone-50 px-3 py-1 text-xs text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
+                  <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
                     {v.category}
                   </span>
                   <a
@@ -216,7 +216,7 @@ export default function VideosPage() {
                   onClick={onShareClick}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+                  className="inline-flex w-full items-center justify-center rounded-lg border border-stone-200 bg-stone-50 px-4 py-2.5 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
                 >
                   Share on Farcaster
                 </a>

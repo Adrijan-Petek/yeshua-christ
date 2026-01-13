@@ -360,25 +360,14 @@ export default function BiblePage() {
 
         {readerTab === "pdf" && (
           <div className="w-full">
-            <object
-              data="/bible/kjv.pdf#toolbar=0&navpanes=0&scrollbar=1&view=FitH"
-              type="application/pdf"
+            <iframe
+              src={`https://docs.google.com/viewer?url=${encodeURIComponent(typeof window !== 'undefined' ? window.location.origin : '')}/bible/kjv.pdf&embedded=true`}
               width="100%"
               height="650"
               className="rounded-lg border border-stone-200 dark:border-stone-700"
-            >
-              <iframe
-                src="/bible/kjv.pdf#toolbar=0&navpanes=0&scrollbar=1&view=FitH"
-                width="100%"
-                height="650"
-                className="rounded-lg"
-                title="Bible PDF Reader"
-              >
-                <p className="p-4 text-sm text-stone-600 dark:text-stone-400">
-                  Your browser doesn&apos;t support PDF viewing. Please use the download buttons above to get the PDF.
-                </p>
-              </iframe>
-            </object>
+              title="Bible PDF Reader"
+              style={{ border: 'none' }}
+            />
             <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">
               View the Bible directly in your browser. Use the download buttons above to save a copy.
             </p>

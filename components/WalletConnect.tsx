@@ -27,11 +27,17 @@ function normalizeMiniAppUser(input: unknown): MiniAppUser | null {
 
 async function fetchWarpcastUserByFid(fid: number): Promise<MiniAppUser | null> {
   try {
+    console.log('[fetchWarpcast] Fetching user for fid:', fid);
     const res = await fetch(`https://client.warpcast.com/v2/user?fid=${fid}`, {
       headers: { accept: "application/json" },
       cache: "no-store",
     });
-    if (!res.ok) return null;
+    
+    if (!res.ok) {
+      console.log('[fetchWarpcast] Response not ok:', res.status);
+      return null;
+    }
+    
     const json = (await res.json()) as {
       result?: {
         user?: {
@@ -43,34 +49,54 @@ async function fetchWarpcastUserByFid(fid: number): Promise<MiniAppUser | null> 
       };
     };
 
-    const user = json?.result?.user;
-    if (!user?.fid) return null;
+    console.log('[fetchWarpcast] API response:', json);
 
-    return {
+    const user = json?.result?.user;
+    if (!user?.fid) {
+      console.log('[fetchWarpcast] No valid user in response');
+      return null;
+    }
+
+    const result = {
       fid: user.fid,
       username: user.username,
       displayName: user.displayName,
       pfpUrl: user.pfp?.url,
     };
-  } catch {
+    
+    console.log('[fetchWarpcast] Returning user:', result);
+    return result;
+  } catch (err) {
+    console.error('[fetchWarpcast] Error:', err);
     return null;
   }
 }
 
 async function fetchVerifiedMiniAppUser(): Promise<MiniAppUser | null> {
   try {
+    console.log('[QuickAuth] Attempting to fetch verified user...');
     const origin = typeof window !== "undefined" ? window.location.origin : "";
     const url = origin ? `${origin}/api/me` : "/api/me";
+    
     const res = await sdk.quickAuth.fetch(url);
+    console.log('[QuickAuth] Response status:', res.status);
+    
     if (!res.ok) return null;
 
     const json = (await res.json()) as { fid?: unknown };
+    console.log('[QuickAuth] Response data:', json);
+    
     const fid = json.fid;
-    if (typeof fid !== "number" || !Number.isFinite(fid)) return null;
+    if (typeof fid !== "number" || !Number.isFinite(fid)) {
+      console.log('[QuickAuth] Invalid FID:', fid);
+      return null;
+    }
 
+    console.log('[QuickAuth] Got valid FID:', fid, '- fetching Warpcast profile...');
     const enriched = await fetchWarpcastUserByFid(fid);
     return enriched;
-  } catch {
+  } catch (err) {
+    console.error('[QuickAuth] Error:', err);
     return null;
   }
 }
@@ -81,6 +107,7 @@ export default function WalletConnect() {
   const [showModal, setShowModal] = useState(false);
   const [isMiniApp, setIsMiniApp] = useState(false);
   const [miniUser, setMiniUser] = useState<MiniAppUser | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const { signIn, signOut, reconnect, isPolling, isError, error, url } = useSignIn({
     onSuccess: () => setShowModal(false),
@@ -101,34 +128,49 @@ export default function WalletConnect() {
 
       setIsMiniApp(inMiniApp);
       if (inMiniApp) {
-        // Try Quick Auth first
+        setIsLoading(true);
+        console.log('[WalletConnect] Detected Mini App environment');
+        
         let user: MiniAppUser | null = null;
         
+        // Try Quick Auth first
         try {
           user = await fetchVerifiedMiniAppUser();
+          if (user) {
+            console.log('[WalletConnect] ✅ Quick Auth succeeded:', user);
+          }
         } catch (error) {
-          console.error('Quick Auth failed:', error);
+          console.error('[WalletConnect] ❌ Quick Auth failed:', error);
         }
 
-        // Fallback to context.user if Quick Auth fails
+        // Fallback to context.user
         if (!user) {
           try {
-            const context = await (sdk as unknown as { context: Promise<unknown> }).context.catch(() => null);
-            const contextUser = normalizeMiniAppUser((context as { user?: unknown } | null | undefined)?.user);
+            console.log('[WalletConnect] Trying sdk.context fallback...');
+            const context = await sdk.context;
+            console.log('[WalletConnect] SDK context:', context);
+            
+            const contextUser = normalizeMiniAppUser(context?.user);
+            console.log('[WalletConnect] Normalized context user:', contextUser);
 
             if (contextUser?.fid) {
               user = await fetchWarpcastUserByFid(contextUser.fid);
               if (!user) {
+                console.log('[WalletConnect] Warpcast fetch failed, using context data as-is');
                 user = contextUser;
               }
+            } else {
+              console.log('[WalletConnect] ⚠️ No valid FID in context');
             }
           } catch (error) {
-            console.error('Context user failed:', error);
+            console.error('[WalletConnect] ❌ Context fallback failed:', error);
           }
         }
 
         if (cancelled) return;
+        console.log('[WalletConnect] 🎯 Final user state:', user);
         setMiniUser(user);
+        setIsLoading(false);
         setShowModal(false);
       }
     })();
@@ -140,23 +182,41 @@ export default function WalletConnect() {
 
   if (!mounted) return null;
 
-  // In Farcaster Mini Apps, the user is already “connected” via host context.
-  // Show them as connected and skip the QR-code flow.
+  // In Farcaster Mini Apps, the user is already "connected" via host context.
   if (isMiniApp) {
-    const handle = miniUser?.username;
-    const label = handle
-      ? `@${handle}`
-      : miniUser?.displayName
-        ? miniUser.displayName
-        : "Farcaster User";
-    const pfpSrc = miniUser?.pfpUrl ?? "/icons/icon-150x150.png";
+    if (isLoading || !miniUser) {
+      return (
+        <button
+          type="button"
+          disabled
+          className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 shadow-sm dark:border-stone-800 dark:bg-stone-950 transition-colors opacity-50"
+        >
+          <div className="w-8 h-8 rounded-full bg-stone-200 dark:bg-stone-700 animate-pulse" />
+          <span className="text-sm font-medium text-stone-800 dark:text-stone-100">Loading...</span>
+        </button>
+      );
+    }
+
+    const handle = miniUser.username;
+    const displayName = miniUser.displayName;
+    const label = handle ? `@${handle}` : displayName || `FID ${miniUser.fid}`;
+    const pfpSrc = miniUser.pfpUrl || "/icons/icon-150x150.png";
+
+    console.log('[WalletConnect] Rendering button with:', { handle, displayName, label, pfpSrc });
 
     return (
       <button
         type="button"
         className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 shadow-sm hover:bg-stone-100 dark:border-stone-800 dark:bg-stone-950 dark:hover:bg-stone-800 transition-colors"
       >
-        <Image src={pfpSrc} alt={label} width={32} height={32} className="w-8 h-8 rounded-full object-cover" unoptimized />
+        <Image 
+          src={pfpSrc} 
+          alt={label} 
+          width={32} 
+          height={32} 
+          className="w-8 h-8 rounded-full object-cover" 
+          unoptimized 
+        />
         <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{label}</span>
       </button>
     );

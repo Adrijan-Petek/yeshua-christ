@@ -101,24 +101,34 @@ export default function WalletConnect() {
 
       setIsMiniApp(inMiniApp);
       if (inMiniApp) {
-        // Prefer Quick Auth (wallet-signed) identity over untrusted context.user.
-        const verified = await fetchVerifiedMiniAppUser();
-        if (cancelled) return;
+        // Try Quick Auth first
+        let user: MiniAppUser | null = null;
+        
+        try {
+          user = await fetchVerifiedMiniAppUser();
+        } catch (error) {
+          console.error('Quick Auth failed:', error);
+        }
 
-        if (verified) {
-          setMiniUser(verified);
-        } else {
-          const context = await (sdk as unknown as { context: Promise<unknown> }).context.catch(() => null);
-          const contextUser = normalizeMiniAppUser((context as { user?: unknown } | null | undefined)?.user);
+        // Fallback to context.user if Quick Auth fails
+        if (!user) {
+          try {
+            const context = await (sdk as unknown as { context: Promise<unknown> }).context.catch(() => null);
+            const contextUser = normalizeMiniAppUser((context as { user?: unknown } | null | undefined)?.user);
 
-          if (contextUser?.fid) {
-            const enriched = await fetchWarpcastUserByFid(contextUser.fid);
-            if (cancelled) return;
-            setMiniUser(enriched ?? contextUser);
-          } else {
-            setMiniUser(contextUser);
+            if (contextUser?.fid) {
+              user = await fetchWarpcastUserByFid(contextUser.fid);
+              if (!user) {
+                user = contextUser;
+              }
+            }
+          } catch (error) {
+            console.error('Context user failed:', error);
           }
         }
+
+        if (cancelled) return;
+        setMiniUser(user);
         setShowModal(false);
       }
     })();
@@ -134,8 +144,6 @@ export default function WalletConnect() {
   // Show them as connected and skip the QR-code flow.
   if (isMiniApp) {
     const handle = miniUser?.username;
-    const fid = miniUser?.fid;
-    const hasFid = typeof fid === "number" && Number.isFinite(fid);
     const label = handle
       ? `@${handle}`
       : miniUser?.displayName
@@ -144,10 +152,13 @@ export default function WalletConnect() {
     const pfpSrc = miniUser?.pfpUrl ?? "/icons/icon-150x150.png";
 
     return (
-      <div className="flex items-center gap-2">
-        <Image src={pfpSrc} alt={label} width={32} height={32} className="w-8 h-8 rounded-full" unoptimized />
-        <span className="text-sm font-medium">{label}</span>
-      </div>
+      <button
+        type="button"
+        className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 shadow-sm hover:bg-stone-100 dark:border-stone-800 dark:bg-stone-950 dark:hover:bg-stone-800 transition-colors"
+      >
+        <Image src={pfpSrc} alt={label} width={32} height={32} className="w-8 h-8 rounded-full object-cover" unoptimized />
+        <span className="text-sm font-medium text-stone-800 dark:text-stone-100">{label}</span>
+      </button>
     );
   }
 
@@ -157,15 +168,20 @@ export default function WalletConnect() {
 
     return (
       <div className="flex items-center gap-2">
-        <Image
-          src={pfpSrc}
-          alt={username}
-          width={32}
-          height={32}
-          className="w-8 h-8 rounded-full"
-          unoptimized
-        />
-        <span className="text-sm font-medium">@{username}</span>
+        <button
+          type="button"
+          className="flex items-center gap-2 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 shadow-sm hover:bg-stone-100 dark:border-stone-800 dark:bg-stone-950 dark:hover:bg-stone-800 transition-colors"
+        >
+          <Image
+            src={pfpSrc}
+            alt={username}
+            width={32}
+            height={32}
+            className="w-8 h-8 rounded-full object-cover"
+            unoptimized
+          />
+          <span className="text-sm font-medium text-stone-800 dark:text-stone-100">@{username}</span>
+        </button>
 
         <button
           type="button"

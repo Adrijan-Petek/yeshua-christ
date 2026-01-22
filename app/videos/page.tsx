@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { sdk } from "@farcaster/miniapp-sdk";
 import { buildWarpcastComposeUrl, tryComposeCast } from "../../lib/farcasterShare";
+import { parseYouTubeUrl } from "@/lib/youtube";
 
 type VideoTab = "Worship Music" | "Teaching Videos";
 
@@ -14,178 +16,90 @@ type VideoEntry = {
 };
 
 const TABS: VideoTab[] = ["Worship Music", "Teaching Videos"];
-const STORAGE_KEY = "yc.videos.v2";
-
-function parseTimeToSeconds(raw: string | null): number | null {
-  if (!raw) return null;
-  const trimmed = raw.trim().toLowerCase();
-
-  if (/^\d+$/.test(trimmed)) return Number(trimmed);
-  if (/^\d+s$/.test(trimmed)) return Number(trimmed.slice(0, -1));
-
-  const match = trimmed.match(/^((\d+)h)?((\d+)m)?((\d+)s)?$/);
-  if (!match) return null;
-
-  const hours = match[2] ? Number(match[2]) : 0;
-  const minutes = match[4] ? Number(match[4]) : 0;
-  const seconds = match[6] ? Number(match[6]) : 0;
-  const total = hours * 3600 + minutes * 60 + seconds;
-  return Number.isFinite(total) && total > 0 ? total : null;
-}
-
-function buildYouTubeEmbedUrl(videoId: string, startSeconds: number | null): string {
-  const url = new URL(`https://www.youtube.com/embed/${videoId}`);
-  if (startSeconds && startSeconds > 0) url.searchParams.set("start", String(startSeconds));
-  return url.toString();
-}
-
-function buildYouTubeWatchUrl(videoId: string, startSeconds: number | null): string {
-  const url = new URL("https://www.youtube.com/watch");
-  url.searchParams.set("v", videoId);
-  if (startSeconds && startSeconds > 0) url.searchParams.set("t", `${startSeconds}s`);
-  return url.toString();
-}
-
-function parseYouTube(input: string): { embedUrl: string; shareUrl: string } | null {
-  try {
-    const url = new URL(input.trim());
-
-    const hostname = url.hostname.replace(/^www\./, "");
-
-    const playlistId = url.searchParams.get("list");
-    const videoIdFromQuery = url.searchParams.get("v");
-    const startSeconds = parseTimeToSeconds(url.searchParams.get("t") ?? url.searchParams.get("start"));
-
-    if (hostname === "youtu.be") {
-      const id = url.pathname.split("/").filter(Boolean)[0];
-      if (!id) return null;
-      return { embedUrl: buildYouTubeEmbedUrl(id, startSeconds), shareUrl: buildYouTubeWatchUrl(id, startSeconds) };
-    }
-
-    if (hostname.endsWith("youtube.com")) {
-      if (url.pathname === "/watch" && videoIdFromQuery) {
-        return {
-          embedUrl: buildYouTubeEmbedUrl(videoIdFromQuery, startSeconds),
-          shareUrl: buildYouTubeWatchUrl(videoIdFromQuery, startSeconds),
-        };
-      }
-
-      if (url.pathname === "/playlist" && playlistId) {
-        return {
-          embedUrl: `https://www.youtube.com/embed/videoseries?list=${playlistId}`,
-          shareUrl: `https://www.youtube.com/playlist?list=${playlistId}`,
-        };
-      }
-
-      if (url.pathname.startsWith("/embed/")) {
-        const id = url.pathname.split("/").filter(Boolean)[1];
-        if (!id) return null;
-        return {
-          embedUrl: buildYouTubeEmbedUrl(id, startSeconds),
-          shareUrl: buildYouTubeWatchUrl(id, startSeconds),
-        };
-      }
-
-      if (url.pathname.startsWith("/shorts/")) {
-        const id = url.pathname.split("/").filter(Boolean)[1];
-        if (!id) return null;
-        const share = new URL(`https://www.youtube.com/shorts/${id}`);
-        if (startSeconds && startSeconds > 0) share.searchParams.set("t", `${startSeconds}s`);
-        return { embedUrl: buildYouTubeEmbedUrl(id, startSeconds), shareUrl: share.toString() };
-      }
-
-      if (playlistId) {
-        return {
-          embedUrl: `https://www.youtube.com/embed/videoseries?list=${playlistId}`,
-          shareUrl: `https://www.youtube.com/playlist?list=${playlistId}`,
-        };
-      }
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
 
 export default function VideosPage() {
   const [input, setInput] = useState("");
   const [tab, setTab] = useState<VideoTab>("Worship Music");
   const [activeTab, setActiveTab] = useState<VideoTab>("Worship Music");
   const [error, setError] = useState<string | null>(null);
-  const [videos, setVideos] = useState<VideoEntry[]>(() => {
-    const seed: VideoEntry[] = [
-      {
-        id: "default-worship-playlist",
-        originalUrl: "https://youtube.com/playlist?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M&si=K0jzitUVp0fNZtB0",
-        shareUrl: "https://youtube.com/playlist?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M",
-        embedUrl: "https://www.youtube.com/embed/videoseries?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M",
-        tab: "Worship Music",
-      },
-      {
-        id: "default-teaching-video-1",
-        originalUrl: "https://www.youtube.com/watch?v=zemc1D9lOIk&t=12405s",
-        shareUrl: "https://www.youtube.com/watch?v=zemc1D9lOIk&t=12405s",
-        embedUrl: buildYouTubeEmbedUrl("zemc1D9lOIk", 12405),
-        tab: "Teaching Videos",
-      },
-    ];
-
-    if (typeof window === "undefined") return seed;
-
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as { videos?: VideoEntry[] };
-        if (Array.isArray(parsed?.videos) && parsed.videos.length > 0) return parsed.videos;
-      }
-    } catch {
-      // ignore
-    }
-
-    return seed;
-  });
+  const [videos, setVideos] = useState<VideoEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
   useEffect(() => {
-    try {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setIsAdmin(!!localStorage.getItem("yc_admin_rules"));
-    } catch {
-      // ignore
-    }
-  }, []);
+    let cancelled = false;
 
-  useEffect(() => {
-    try {
-      if (videos.length === 0) return;
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ videos }));
-    } catch {
-      // ignore
+    async function init() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch("/api/videos", { cache: "no-store" });
+        const data = (await response.json()) as { videos?: VideoEntry[]; error?: string };
+        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+        if (!cancelled) setVideos(Array.isArray(data.videos) ? data.videos : []);
+      } catch (e) {
+        const message = e instanceof Error ? e.message : "Unable to load videos.";
+        if (!cancelled) setError(message);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+
+      try {
+        const isMiniApp = await sdk.isInMiniApp().catch(() => false);
+        if (!isMiniApp) return;
+
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const adminUrl = origin ? `${origin}/api/admin` : "/api/admin";
+        const res = await sdk.quickAuth.fetch(adminUrl);
+        if (!res.ok) return;
+        const json = (await res.json()) as { isAdmin?: unknown };
+        if (!cancelled) setIsAdmin(json.isAdmin === true);
+      } catch {
+        // ignore
+      }
     }
-  }, [videos]);
+
+    void init();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const canAdd = useMemo(() => input.trim().length > 0, [input]);
 
-  function add() {
+  async function add() {
     setError(null);
-    const parsed = parseYouTube(input);
+    const parsed = parseYouTubeUrl(input);
     if (!parsed) {
       setError("Please paste a valid YouTube video or playlist link.");
       return;
     }
 
-    const entry: VideoEntry = {
-      id: crypto.randomUUID(),
-      originalUrl: input.trim(),
-      shareUrl: parsed.shareUrl,
-      embedUrl: parsed.embedUrl,
-      tab,
-    };
+    try {
+      const isMiniApp = await sdk.isInMiniApp().catch(() => false);
+      if (!isMiniApp) {
+        setError("Open this page inside Farcaster to add videos.");
+        return;
+      }
 
-    setVideos((prev) => [entry, ...prev]);
-    setInput("");
+      const origin = typeof window !== "undefined" ? window.location.origin : "";
+      const url = origin ? `${origin}/api/videos` : "/api/videos";
+      const response = await sdk.quickAuth.fetch(url, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ url: input.trim(), tab }),
+      });
+
+      const data = (await response.json()) as { video?: VideoEntry; error?: string };
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      if (data.video) setVideos((prev) => [data.video!, ...prev]);
+      setInput("");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to add video.";
+      setError(message);
+    }
   }
 
   const visibleVideos = useMemo(() => videos.filter((v) => v.tab === activeTab), [activeTab, videos]);
@@ -260,6 +174,8 @@ export default function VideosPage() {
       )}
 
       <section className="space-y-3.5">
+        {loading && <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">Loading…</p>}
+
         {visibleVideos.length === 0 && (
           <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">No videos added yet.</p>
         )}

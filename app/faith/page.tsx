@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { buildWarpcastComposeUrl, tryComposeCast } from "../../lib/farcasterShare";
+import {
+  buildFarcasterComposeUrl,
+  buildWarpcastFallbackComposeUrl,
+  tryComposeCast,
+} from "../../lib/farcasterShare";
 
 type WarpcastAuthor = {
   username?: string;
@@ -21,7 +25,7 @@ type WarpcastCast = {
 const PREFILL_TEXT = "Sharing faith\n\n#YeshuaChrist";
 
 function castUrl(hash: string) {
-  return `https://warpcast.com/~/cast/${hash}`;
+  return `https://farcaster.xyz/~/cast/${hash}`;
 }
 
 export default function FaithPage() {
@@ -39,8 +43,9 @@ export default function FaithPage() {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const shareEmbeds = useMemo(() => (appUrl ? [appUrl] : []), [appUrl]);
-  const shareHref = useMemo(
-    () => buildWarpcastComposeUrl({ text: PREFILL_TEXT, embeds: shareEmbeds }),
+  const shareHref = useMemo(() => buildFarcasterComposeUrl({ text: PREFILL_TEXT, embeds: shareEmbeds }), [shareEmbeds]);
+  const shareHrefFallback = useMemo(
+    () => buildWarpcastFallbackComposeUrl({ text: PREFILL_TEXT, embeds: shareEmbeds }),
     [shareEmbeds],
   );
 
@@ -48,9 +53,12 @@ export default function FaithPage() {
     async (e: React.MouseEvent<HTMLAnchorElement>) => {
       e.preventDefault();
       const ok = await tryComposeCast({ text: PREFILL_TEXT, embeds: shareEmbeds });
-      if (!ok) window.open(shareHref, "_blank", "noopener,noreferrer");
+      if (!ok) {
+        const opened = window.open(shareHref, "_blank", "noopener,noreferrer");
+        if (!opened) window.open(shareHrefFallback, "_blank", "noopener,noreferrer");
+      }
     },
-    [shareEmbeds, shareHref],
+    [shareEmbeds, shareHref, shareHrefFallback],
   );
 
   useEffect(() => {
@@ -94,7 +102,7 @@ export default function FaithPage() {
           <div>
             <h2 className="text-base sm:text-lg font-semibold">Post on Farcaster</h2>
             <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">
-              Opens Warpcast composer with a prefilled message.
+              Opens Farcaster composer with a prefilled message.
             </p>
           </div>
           <a
@@ -120,12 +128,12 @@ export default function FaithPage() {
         <div className="mb-3 flex items-center justify-between gap-3">
           <h2 className="text-base sm:text-lg font-semibold">Farcaster Feed</h2>
           <a
-            href={`https://warpcast.com/~/search?q=${encodeURIComponent(query)}`}
+            href={`https://farcaster.xyz/~/search?q=${encodeURIComponent(query)}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-xs sm:text-sm text-stone-600 underline underline-offset-4 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
           >
-            Open on Warpcast
+            Open on Farcaster
           </a>
         </div>
 

@@ -28,13 +28,29 @@ function normalizeMiniAppUser(input: unknown): MiniAppUser | null {
 async function fetchWarpcastUserByFid(fid: number): Promise<MiniAppUser | null> {
   try {
     console.log('[fetchWarpcast] Fetching user for fid:', fid);
-    const res = await fetch(`https://client.warpcast.com/v2/user?fid=${fid}`, {
-      headers: { accept: "application/json" },
-      cache: "no-store",
-    });
+    const urls = [
+      `https://client.farcaster.xyz/v2/user?fid=${fid}`,
+      `https://client.warpcast.com/v2/user?fid=${fid}`,
+    ];
+
+    let res: Response | null = null;
+    for (const url of urls) {
+      try {
+        const attempt = await fetch(url, {
+          headers: { accept: "application/json" },
+          cache: "no-store",
+        });
+        if (attempt.ok) {
+          res = attempt;
+          break;
+        }
+      } catch {
+        // try next url
+      }
+    }
     
-    if (!res.ok) {
-      console.log('[fetchWarpcast] Response not ok:', res.status);
+    if (!res) {
+      console.log('[fetchWarpcast] No upstream responded with 200');
       return null;
     }
     
@@ -309,7 +325,7 @@ export default function WalletConnect() {
                     rel="noopener noreferrer"
                     className="inline-flex w-full items-center justify-center rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
                   >
-                    Open in Warpcast
+                    Open in Farcaster
                   </a>
 
                   {isPolling && (

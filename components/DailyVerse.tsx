@@ -2,36 +2,63 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { buildWarpcastComposeUrl, tryComposeCast } from "../lib/farcasterShare";
+import { getLocalDateKey, getOfflineDailyVerse, type Verse } from "@/lib/dailyVerse";
 
-interface Verse {
-  reference: string;
-  text: string;
-  translation_name: string;
-}
+const STORAGE_KEY = "yc.dailyVerse.v1";
+
+type CachedDailyVerse = {
+  dateKey: string;
+  verse: Verse;
+};
 
 export default function DailyVerse() {
   const [verse, setVerse] = useState<Verse | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   const shareEmbeds = useMemo(() => (appUrl ? [appUrl] : []), [appUrl]);
 
   useEffect(() => {
-
     const fetchDailyVerse = async () => {
+      const dateKey = getLocalDateKey();
+
       try {
-        // For daily verse, using John 3:16 as example. In production, could randomize or use date-based reference.
-        const response = await fetch("https://dailybible.ca/api/John+3:16");
-        if (!response.ok) throw new Error("Failed to fetch verse");
-        const data = await response.json();
-        setVerse({
+        const cachedRaw = localStorage.getItem(STORAGE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) as CachedDailyVerse;
+          if (cached?.dateKey === dateKey && cached?.verse?.reference && cached?.verse?.text) {
+            setVerse(cached.verse);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch {
+        // ignore cache errors
+      }
+
+      try {
+        const response = await fetch(`/api/daily-verse?dateKey=${encodeURIComponent(dateKey)}`, {
+          cache: "no-store",
+        });
+        if (!response.ok) throw new Error("Failed to fetch daily verse");
+        const data = (await response.json()) as Partial<Verse>;
+        if (!data.reference || !data.text) throw new Error("Invalid daily verse payload");
+        const nextVerse: Verse = {
           reference: data.reference,
           text: data.text,
-          translation_name: data.translation_name,
-        });
+          translation_name: data.translation_name ?? "KJV",
+        };
+
+        setVerse(nextVerse);
+        try {
+          const cached: CachedDailyVerse = { dateKey, verse: nextVerse };
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(cached));
+        } catch {
+          // ignore cache errors
+        }
       } catch {
-        setError("Could not load daily verse");
+        const offline = getOfflineDailyVerse(dateKey);
+        setVerse(offline);
       } finally {
         setLoading(false);
       }
@@ -44,14 +71,6 @@ export default function DailyVerse() {
     return (
       <div className="text-center">
         <p className="text-sm text-stone-600 dark:text-stone-400">Loading daily verse...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="text-center">
-        <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
       </div>
     );
   }

@@ -21,6 +21,14 @@ export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
 
+function getEnvAny(names: string[]): string | undefined {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value) return value;
+  }
+  return undefined;
+}
+
 export function getAdminCookieName(): string {
   return "yc_admin_session";
 }
@@ -56,8 +64,8 @@ export function parseCookies(header: string | null): Record<string, string> {
 }
 
 export async function ensureBootstrapAdminUser(): Promise<void> {
-  const bootstrapEmail = process.env.ADMIN_BOOTSTRAP_EMAIL;
-  const bootstrapPassword = process.env.ADMIN_BOOTSTRAP_PASSWORD;
+  const bootstrapEmail = getEnvAny(["ADMIN_BOOTSTRAP_EMAIL", "ADMIN_SEED_EMAIL", "E_MAILL"]);
+  const bootstrapPassword = getEnvAny(["ADMIN_BOOTSTRAP_PASSWORD", "ADMIN_SEED_PASSWORD", "PASSWORD"]);
   if (!bootstrapEmail || !bootstrapPassword) return;
 
   const db = await getMongoDb();
@@ -78,8 +86,8 @@ export async function ensureBootstrapAdminUser(): Promise<void> {
 }
 
 export async function ensureSeedAdminUser(): Promise<void> {
-  const seedEmail = process.env.ADMIN_SEED_EMAIL;
-  const seedPassword = process.env.ADMIN_SEED_PASSWORD;
+  const seedEmail = getEnvAny(["ADMIN_SEED_EMAIL", "E_MAILL"]);
+  const seedPassword = getEnvAny(["ADMIN_SEED_PASSWORD", "PASSWORD"]);
   if (!seedEmail || !seedPassword) return;
 
   const db = await getMongoDb();

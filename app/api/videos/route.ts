@@ -23,8 +23,51 @@ function isVideoTab(value: unknown): value is VideoTab {
   return value === "Worship Music" || value === "Teaching Videos";
 }
 
+const SEED_VIDEOS: Omit<VideoDoc, "createdAt" | "createdByFid">[] = [
+  {
+    id: "seed-worship-playlist",
+    originalUrl: "https://youtube.com/playlist?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M&si=K0jzitUVp0fNZtB0",
+    shareUrl: "https://www.youtube.com/playlist?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M",
+    embedUrl: "https://www.youtube.com/embed/videoseries?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M",
+    tab: "Worship Music",
+  },
+  {
+    id: "seed-teaching-video-1",
+    originalUrl: "https://www.youtube.com/watch?v=zemc1D9lOIk&t=12405s",
+    shareUrl: "https://www.youtube.com/watch?v=zemc1D9lOIk&t=12405s",
+    embedUrl: "https://www.youtube.com/embed/zemc1D9lOIk?start=12405",
+    tab: "Teaching Videos",
+  },
+];
+
+async function ensureSeedVideos() {
+  const db = await getMongoDb();
+  const collection = db.collection<VideoDoc>("videos");
+
+  for (const seed of SEED_VIDEOS) {
+    const parsed = parseYouTubeUrl(seed.originalUrl);
+    if (!parsed) continue;
+
+    await collection.updateOne(
+      { shareUrl: parsed.shareUrl },
+      {
+        $setOnInsert: {
+          id: seed.id,
+          originalUrl: seed.originalUrl,
+          shareUrl: parsed.shareUrl,
+          embedUrl: parsed.embedUrl,
+          tab: seed.tab,
+          createdAt: new Date(),
+        },
+      },
+      { upsert: true },
+    );
+  }
+}
+
 export async function GET() {
   try {
+    await ensureSeedVideos();
     const db = await getMongoDb();
     const videos = await db
       .collection<VideoDoc>("videos")

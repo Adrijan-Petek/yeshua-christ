@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import {
   createAdminSession,
   ensureBootstrapAdminUser,
+  ensureSeedAdminUser,
   findAdminByEmail,
   getAdminCookieName,
   getSessionDays,
@@ -19,6 +20,7 @@ export async function POST(request: Request) {
   if (!email || !password) return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
 
   await ensureBootstrapAdminUser();
+  await ensureSeedAdminUser();
 
   const user = await findAdminByEmail(email);
   if (!user) return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
@@ -38,4 +40,3 @@ export async function POST(request: Request) {
   });
   return res;
 }
-

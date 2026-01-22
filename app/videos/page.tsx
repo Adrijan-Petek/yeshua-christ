@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { sdk } from "@farcaster/miniapp-sdk";
 import { buildWarpcastComposeUrl, tryComposeCast } from "../../lib/farcasterShare";
 import { parseYouTubeUrl } from "@/lib/youtube";
 
@@ -47,12 +46,7 @@ export default function VideosPage() {
       }
 
       try {
-        const isMiniApp = await sdk.isInMiniApp().catch(() => false);
-        if (!isMiniApp) return;
-
-        const origin = typeof window !== "undefined" ? window.location.origin : "";
-        const adminUrl = origin ? `${origin}/api/admin` : "/api/admin";
-        const res = await sdk.quickAuth.fetch(adminUrl);
+        const res = await fetch("/api/admin", { cache: "no-store" });
         if (!res.ok) return;
         const json = (await res.json()) as { isAdmin?: unknown };
         if (!cancelled) setIsAdmin(json.isAdmin === true);
@@ -78,15 +72,7 @@ export default function VideosPage() {
     }
 
     try {
-      const isMiniApp = await sdk.isInMiniApp().catch(() => false);
-      if (!isMiniApp) {
-        setError("Open this page inside Farcaster to add videos.");
-        return;
-      }
-
-      const origin = typeof window !== "undefined" ? window.location.origin : "";
-      const url = origin ? `${origin}/api/videos` : "/api/videos";
-      const response = await sdk.quickAuth.fetch(url, {
+      const response = await fetch("/api/videos", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ url: input.trim(), tab }),

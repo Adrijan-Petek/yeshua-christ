@@ -77,6 +77,28 @@ export async function ensureBootstrapAdminUser(): Promise<void> {
   });
 }
 
+export async function ensureSeedAdminUser(): Promise<void> {
+  const seedEmail = process.env.ADMIN_SEED_EMAIL;
+  const seedPassword = process.env.ADMIN_SEED_PASSWORD;
+  if (!seedEmail || !seedPassword) return;
+
+  const db = await getMongoDb();
+  const users = db.collection<AdminUser>("admin_users");
+  const emailLower = normalizeEmail(seedEmail);
+  const existing = await users.findOne({ emailLower });
+  if (existing) return;
+
+  const passwordHash = await bcrypt.hash(seedPassword, 12);
+  const now = new Date();
+  await users.insertOne({
+    _id: new ObjectId(),
+    emailLower,
+    passwordHash,
+    createdAt: now,
+    updatedAt: now,
+  });
+}
+
 export async function findAdminByEmail(email: string): Promise<AdminUser | null> {
   const db = await getMongoDb();
   const users = db.collection<AdminUser>("admin_users");

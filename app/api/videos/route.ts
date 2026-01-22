@@ -1,7 +1,5 @@
 import { NextResponse } from "next/server";
-import { Errors } from "@farcaster/quick-auth";
 import { getMongoDb } from "@/lib/mongodb";
-import { isAdminFid, requireFarcasterFid } from "@/lib/farcasterAuth";
 import { parseYouTubeUrl } from "@/lib/youtube";
 import { getAdminCookieName, getAdminFromSessionToken, parseCookies } from "@/lib/adminAuth";
 
@@ -85,30 +83,12 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
-  let createdByFid: number | undefined;
-
   const cookieHeader = request.headers.get("cookie");
   const cookies = parseCookies(cookieHeader);
   const sessionToken = cookies[getAdminCookieName()];
-  if (sessionToken) {
-    const admin = await getAdminFromSessionToken(sessionToken);
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  } else {
-    let fid: number;
-    try {
-      fid = await requireFarcasterFid(request);
-      createdByFid = fid;
-    } catch (e) {
-      if (e instanceof Errors.InvalidTokenError) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      return NextResponse.json({ error: "Auth verification failed" }, { status: 500 });
-    }
-
-    if (!isAdminFid(fid)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-  }
+  if (!sessionToken) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const admin = await getAdminFromSessionToken(sessionToken);
+  if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const body = (await request.json().catch(() => null)) as {
     url?: unknown;
@@ -133,7 +113,6 @@ export async function POST(request: Request) {
     embedUrl: parsed.embedUrl,
     tab,
     createdAt: new Date(),
-    createdByFid,
   };
 
   try {

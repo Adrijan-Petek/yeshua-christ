@@ -8,13 +8,14 @@ type Category = "Sermon" | "Worship" | "Testimony" | "Bible Study";
 type VideoEntry = {
   id: string;
   originalUrl: string;
+  shareUrl: string;
   embedUrl: string;
   category: Category;
 };
 
 const categories: Category[] = ["Sermon", "Worship", "Testimony", "Bible Study"];
 
-function parseYouTube(input: string): { embedUrl: string } | null {
+function parseYouTube(input: string): { embedUrl: string; shareUrl: string } | null {
   try {
     const url = new URL(input.trim());
 
@@ -26,36 +27,50 @@ function parseYouTube(input: string): { embedUrl: string } | null {
     if (hostname === "youtu.be") {
       const id = url.pathname.split("/").filter(Boolean)[0];
       if (!id) return null;
-      return { embedUrl: `https://www.youtube.com/embed/${id}` };
+      return { embedUrl: `https://www.youtube.com/embed/${id}`, shareUrl: `https://youtu.be/${id}` };
     }
 
     if (hostname.endsWith("youtube.com")) {
       if (url.pathname === "/watch" && videoIdFromQuery) {
-        return { embedUrl: `https://www.youtube.com/embed/${videoIdFromQuery}` };
+        return {
+          embedUrl: `https://www.youtube.com/embed/${videoIdFromQuery}`,
+          shareUrl: `https://www.youtube.com/watch?v=${videoIdFromQuery}`,
+        };
       }
 
       if (url.pathname === "/playlist" && playlistId) {
-        return { embedUrl: `https://www.youtube.com/embed/videoseries?list=${playlistId}` };
+        return {
+          embedUrl: `https://www.youtube.com/embed/videoseries?list=${playlistId}`,
+          shareUrl: `https://www.youtube.com/playlist?list=${playlistId}`,
+        };
       }
 
       if (url.pathname.startsWith("/embed/")) {
-        return { embedUrl: `https://www.youtube.com${url.pathname}` };
+        const id = url.pathname.split("/").filter(Boolean)[1];
+        if (!id) return null;
+        return {
+          embedUrl: `https://www.youtube.com${url.pathname}`,
+          shareUrl: `https://www.youtube.com/watch?v=${id}`,
+        };
       }
 
       if (url.pathname === "/shorts") {
         const id = url.pathname.split("/").filter(Boolean)[1];
         if (!id) return null;
-        return { embedUrl: `https://www.youtube.com/embed/${id}` };
+        return { embedUrl: `https://www.youtube.com/embed/${id}`, shareUrl: `https://www.youtube.com/shorts/${id}` };
       }
 
       if (url.pathname.startsWith("/shorts/")) {
         const id = url.pathname.split("/").filter(Boolean)[1];
         if (!id) return null;
-        return { embedUrl: `https://www.youtube.com/embed/${id}` };
+        return { embedUrl: `https://www.youtube.com/embed/${id}`, shareUrl: `https://www.youtube.com/shorts/${id}` };
       }
 
       if (playlistId) {
-        return { embedUrl: `https://www.youtube.com/embed/videoseries?list=${playlistId}` };
+        return {
+          embedUrl: `https://www.youtube.com/embed/videoseries?list=${playlistId}`,
+          shareUrl: `https://www.youtube.com/playlist?list=${playlistId}`,
+        };
       }
     }
 
@@ -73,6 +88,7 @@ export default function VideosPage() {
     {
       id: "default-playlist",
       originalUrl: "https://youtube.com/playlist?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M&si=K0jzitUVp0fNZtB0",
+      shareUrl: "https://youtube.com/playlist?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M",
       embedUrl: "https://www.youtube.com/embed/videoseries?list=PL6XvrC4XlCbwThPkcJCU8A6TdZO5cue5M",
       category: "Bible Study",
     },
@@ -102,6 +118,7 @@ export default function VideosPage() {
     const entry: VideoEntry = {
       id: crypto.randomUUID(),
       originalUrl: input.trim(),
+      shareUrl: parsed.shareUrl,
       embedUrl: parsed.embedUrl,
       category,
     };
@@ -169,12 +186,12 @@ export default function VideosPage() {
             const isPlaylist = v.embedUrl.includes('videoseries');
 
             const shareText = `Be encouraged in Christ\n\n#YeshuaChrist`;
-            const shareEmbeds = [v.originalUrl, appUrl].filter(Boolean) as string[];
-            const shareHref = buildWarpcastComposeUrl({ text: `${shareText}\n\n${v.originalUrl}`, embeds: shareEmbeds });
+            const shareEmbeds = [v.shareUrl, appUrl].filter(Boolean) as string[];
+            const shareHref = buildWarpcastComposeUrl({ text: `${shareText}\n\n${v.shareUrl}`, embeds: shareEmbeds });
 
             const onShareClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
               e.preventDefault();
-              const ok = await tryComposeCast({ text: `${shareText}\n\n${v.originalUrl}`, embeds: shareEmbeds });
+              const ok = await tryComposeCast({ text: `${shareText}\n\n${v.shareUrl}`, embeds: shareEmbeds });
               if (!ok) window.open(shareHref, "_blank", "noopener,noreferrer");
             };
 
@@ -202,7 +219,7 @@ export default function VideosPage() {
                     {v.category}
                   </span>
                   <a
-                    href={v.originalUrl}
+                    href={v.shareUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-xs text-stone-600 underline underline-offset-4 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"

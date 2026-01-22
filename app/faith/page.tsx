@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { sdk } from "@farcaster/miniapp-sdk";
 import {
   buildFarcasterComposeUrl,
   buildWarpcastFallbackComposeUrl,
@@ -33,6 +34,7 @@ export default function FaithPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rules, setRules] = useState("Christ-centered content only\nNo politics\nNo financial promotion");
+  const [fid, setFid] = useState<number | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("yc_admin_rules");
@@ -64,12 +66,34 @@ export default function FaithPage() {
   useEffect(() => {
     let cancelled = false;
 
+    async function loadFid() {
+      try {
+        const isMiniApp = await sdk.isInMiniApp().catch(() => false);
+        if (!isMiniApp) return;
+
+        const origin = typeof window !== "undefined" ? window.location.origin : "";
+        const url = origin ? `${origin}/api/me` : "/api/me";
+        const res = await sdk.quickAuth.fetch(url);
+        if (!res.ok) return;
+        const json = (await res.json()) as { fid?: unknown };
+        if (typeof json.fid !== "number" || !Number.isFinite(json.fid)) return;
+        if (!cancelled) setFid(json.fid);
+      } catch {
+        // ignore
+      }
+    }
+
+    void loadFid();
+
     async function load() {
       setLoading(true);
       setError(null);
 
       try {
-        const response = await fetch(`/api/farcaster?q=${encodeURIComponent(query)}`);
+        const params = new URLSearchParams();
+        params.set("q", query);
+        if (fid) params.set("fid", String(fid));
+        const response = await fetch(`/api/farcaster?${params.toString()}`);
         const data = (await response.json()) as { casts?: WarpcastCast[]; error?: string };
         if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
         if (!cancelled) setCasts(Array.isArray(data.casts) ? data.casts : []);
@@ -87,7 +111,7 @@ export default function FaithPage() {
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, fid]);
 
   return (
     <div className="space-y-6 px-4">
@@ -144,7 +168,9 @@ export default function FaithPage() {
         {error && <p className="text-xs sm:text-sm text-red-700">{error}</p>}
 
         {!loading && !error && casts.length === 0 && (
-          <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">No casts found for {query} yet.</p>
+          <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">
+            {fid ? `No casts found from you for ${query} yet.` : `No casts found for ${query} yet.`}
+          </p>
         )}
 
         <div className="space-y-2.5">

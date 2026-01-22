@@ -70,11 +70,14 @@ export default function FaithPage() {
 
       try {
         const response = await fetch(`/api/farcaster?q=${encodeURIComponent(query)}`);
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const data = (await response.json()) as { casts?: WarpcastCast[] };
+        const data = (await response.json()) as { casts?: WarpcastCast[]; error?: string };
+        if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
         if (!cancelled) setCasts(Array.isArray(data.casts) ? data.casts : []);
-      } catch {
-        if (!cancelled) setError("Unable to load the feed right now.");
+      } catch (e) {
+        if (!cancelled) {
+          const message = e instanceof Error ? e.message : null;
+          setError(message || "Unable to load the feed right now.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

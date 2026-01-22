@@ -26,6 +26,9 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
 
+  const [newAdminEmail, setNewAdminEmail] = useState("");
+  const [newAdminPassword, setNewAdminPassword] = useState("");
+
   const [rules, setRules] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_RULES);
     return saved || "Christ-centered content only\nNo politics\nNo financial promotion";
@@ -128,6 +131,25 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       alert("Password updated!");
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to change password.";
+      setAuthError(message);
+    }
+  };
+
+  const createAdmin = async () => {
+    setAuthError(null);
+    try {
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email: newAdminEmail.trim(), password: newAdminPassword }),
+      });
+      const json = (await res.json()) as { error?: string };
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setNewAdminEmail("");
+      setNewAdminPassword("");
+      alert("Admin user created!");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to create admin user.";
       setAuthError(message);
     }
   };
@@ -267,6 +289,32 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
               >
                 Change Password
+              </button>
+            </div>
+          )}
+
+          {isAdmin && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium">Create Admin User</label>
+              <input
+                value={newAdminEmail}
+                onChange={(e) => setNewAdminEmail(e.target.value)}
+                placeholder="Email"
+                className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-stone-900 dark:focus:ring-stone-700"
+              />
+              <input
+                value={newAdminPassword}
+                onChange={(e) => setNewAdminPassword(e.target.value)}
+                placeholder="Password"
+                type="password"
+                className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-stone-900 dark:focus:ring-stone-700"
+              />
+              <button
+                onClick={createAdmin}
+                disabled={!newAdminEmail.trim() || !newAdminPassword}
+                className="w-full rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+              >
+                Create Admin
               </button>
             </div>
           )}

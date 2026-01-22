@@ -84,6 +84,28 @@ export async function findAdminByEmail(email: string): Promise<AdminUser | null>
   return await users.findOne({ emailLower });
 }
 
+export async function createAdminUser(email: string, password: string): Promise<AdminUser> {
+  const db = await getMongoDb();
+  const users = db.collection<AdminUser>("admin_users");
+  const emailLower = normalizeEmail(email);
+
+  const existing = await users.findOne({ emailLower });
+  if (existing) throw new Error("Admin user already exists");
+
+  const passwordHash = await bcrypt.hash(password, 12);
+  const now = new Date();
+  const user: AdminUser = {
+    _id: new ObjectId(),
+    emailLower,
+    passwordHash,
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  await users.insertOne(user);
+  return user;
+}
+
 export async function verifyAdminPassword(user: AdminUser, password: string): Promise<boolean> {
   return await bcrypt.compare(password, user.passwordHash);
 }
@@ -132,4 +154,3 @@ export async function updateAdminPassword(adminUserId: ObjectId, newPassword: st
   const passwordHash = await bcrypt.hash(newPassword, 12);
   await users.updateOne({ _id: adminUserId }, { $set: { passwordHash, updatedAt: new Date() } });
 }
-

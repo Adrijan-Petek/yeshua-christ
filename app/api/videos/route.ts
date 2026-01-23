@@ -16,6 +16,7 @@ type VideoDoc = {
   tab: VideoTab;
   title?: string;
   seasons?: number;
+  order?: number;
   createdAt: Date;
   createdByFid?: number;
 };
@@ -48,7 +49,7 @@ async function ensureSeedVideos() {
   const existingCount = await collection.countDocuments({}, { limit: 1 });
   if (existingCount > 0) return;
 
-  for (const seed of SEED_VIDEOS) {
+  for (const [index, seed] of SEED_VIDEOS.entries()) {
     const parsed = parseVideoUrl(seed.originalUrl);
     if (!parsed) continue;
 
@@ -61,6 +62,7 @@ async function ensureSeedVideos() {
           shareUrl: parsed.shareUrl,
           embedUrl: parsed.embedUrl,
           tab: seed.tab,
+          order: index + 1,
           createdAt: new Date(),
         },
       },
@@ -76,9 +78,21 @@ export async function GET() {
     const videos = await db
       .collection<VideoDoc>("videos")
       .find({}, { projection: { _id: 0 } })
-      .sort({ createdAt: -1 })
       .limit(200)
       .toArray();
+
+    videos.sort((a, b) => {
+      if (a.tab !== b.tab) return a.tab.localeCompare(b.tab);
+
+      const aHasOrder = typeof a.order === "number" && Number.isFinite(a.order);
+      const bHasOrder = typeof b.order === "number" && Number.isFinite(b.order);
+      if (aHasOrder && bHasOrder) return (a.order as number) - (b.order as number);
+      if (aHasOrder) return -1;
+      if (bHasOrder) return 1;
+
+      if (a.tab === "TV Series") return a.createdAt.getTime() - b.createdAt.getTime();
+      return b.createdAt.getTime() - a.createdAt.getTime();
+    });
 
     return NextResponse.json({ videos }, { status: 200 });
   } catch (e) {
@@ -147,13 +161,30 @@ export async function POST(request: Request) {
           ...(seasons !== null ? { seasons } : {}),
         }
       : {}),
+    order: undefined,
     createdAt: new Date(),
   };
 
   try {
     const db = await getMongoDb();
-    await db.collection<VideoDoc>("videos").insertOne(doc);
-    return NextResponse.json({ video: doc }, { status: 201 });
+    const collection = db.collection<VideoDoc>("videos");
+    const last = await collection
+      .find(
+        tab === "TV Series" && rawTitle ? { tab, title: rawTitle } : { tab },
+        { projection: { _id: 0, order: 1, createdAt: 1 } },
+      )
+      .sort({ order: -1, createdAt: -1 })
+      .limit(1)
+      .toArray();
+
+    const nextOrder =
+      last.length > 0 && typeof last[0]?.order === "number" && Number.isFinite(last[0].order)
+        ? (last[0].order as number) + 1
+        : 1;
+
+    const saved: VideoDoc = { ...doc, order: nextOrder };
+    await collection.insertOne(saved);
+    return NextResponse.json({ video: saved }, { status: 201 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to save video";
     return NextResponse.json({ error: message }, { status: 500 });

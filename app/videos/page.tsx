@@ -13,9 +13,11 @@ type VideoEntry = {
   embedUrl: string;
   tab: VideoTab;
   title?: string;
+  episode?: number;
   seasons?: number;
   order?: number;
   createdAt?: string;
+  manualOrder?: boolean;
 };
 
 const TABS: VideoTab[] = ["Worship Music", "Teaching Videos", "TV Series"];
@@ -129,43 +131,22 @@ export default function VideosPage() {
     }
   }
 
-  const sortedVisibleVideos = useMemo(() => {
-    const list = videos.filter((v) => v.tab === activeTab);
-
-    const parseCreatedAt = (value?: string) => {
-      if (!value) return 0;
-      const t = Date.parse(value);
-      return Number.isFinite(t) ? t : 0;
-    };
-
-    return list.sort((a, b) => {
-      const aHasOrder = typeof a.order === "number" && Number.isFinite(a.order);
-      const bHasOrder = typeof b.order === "number" && Number.isFinite(b.order);
-      if (aHasOrder && bHasOrder) return (a.order as number) - (b.order as number);
-      if (aHasOrder) return -1;
-      if (bHasOrder) return 1;
-
-      const aCreated = parseCreatedAt(a.createdAt);
-      const bCreated = parseCreatedAt(b.createdAt);
-      if (activeTab === "TV Series") return aCreated - bCreated;
-      return bCreated - aCreated;
-    });
-  }, [activeTab, videos]);
+  const visibleVideos = useMemo(() => videos.filter((v) => v.tab === activeTab), [activeTab, videos]);
 
   const tvSeriesTitles = useMemo(() => {
     if (activeTab !== "TV Series") return [];
     const titles = new Set<string>();
-    for (const v of sortedVisibleVideos) {
+    for (const v of visibleVideos) {
       if (v.title && v.title.trim()) titles.add(v.title.trim());
     }
     return Array.from(titles).sort((a, b) => a.localeCompare(b));
-  }, [activeTab, sortedVisibleVideos]);
+  }, [activeTab, visibleVideos]);
 
   const reorderScopeVideos = useMemo(() => {
-    if (activeTab !== "TV Series") return sortedVisibleVideos;
-    if (!seriesFilter) return sortedVisibleVideos;
-    return sortedVisibleVideos.filter((v) => (v.title ?? "").trim() === seriesFilter);
-  }, [activeTab, seriesFilter, sortedVisibleVideos]);
+    if (activeTab !== "TV Series") return visibleVideos;
+    if (!seriesFilter) return visibleVideos;
+    return visibleVideos.filter((v) => (v.title ?? "").trim() === seriesFilter);
+  }, [activeTab, seriesFilter, visibleVideos]);
 
   useEffect(() => {
     if (!isAdmin) return;
@@ -230,7 +211,7 @@ export default function VideosPage() {
           if (v.tab !== activeTab) return v;
           if (activeTab === "TV Series" && seriesFilter && (v.title ?? "").trim() !== seriesFilter) return v;
           const nextOrder = orderById.get(v.id);
-          return nextOrder ? { ...v, order: nextOrder } : v;
+          return nextOrder ? { ...v, order: nextOrder, manualOrder: true } : v;
         }),
       );
 
@@ -337,13 +318,13 @@ export default function VideosPage() {
       <section className="space-y-3.5">
         {loading && <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">Loading…</p>}
 
-        {sortedVisibleVideos.length === 0 && (
+        {visibleVideos.length === 0 && (
           <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">No videos added yet.</p>
         )}
 
         {error && <p className="text-xs sm:text-sm text-red-700">{error}</p>}
 
-        {isAdmin && sortedVisibleVideos.length > 1 && (
+        {isAdmin && visibleVideos.length > 1 && (
           <section className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-black">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="space-y-0.5">
@@ -448,14 +429,19 @@ export default function VideosPage() {
         )}
 
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
-          {sortedVisibleVideos.map((v) => {
+          {visibleVideos.map((v) => {
             const isPlaylist = v.embedUrl.includes('videoseries');
+
+            const episodeLabel =
+              typeof v.episode === "number" && Number.isFinite(v.episode)
+                ? v.episode
+                : typeof v.order === "number" && Number.isFinite(v.order)
+                  ? v.order
+                  : null;
 
             const castTitle =
               v.tab === "TV Series"
-                ? `${v.title ?? "TV Series"}${
-                    typeof v.order === "number" && Number.isFinite(v.order) ? ` — Episode ${v.order}` : ""
-                  }`
+                ? `${v.title ?? "TV Series"}${episodeLabel !== null ? ` — Episode ${episodeLabel}` : ""}`
                 : v.tab === "Worship Music"
                   ? "Worship Music"
                   : "Teaching Video";
@@ -529,9 +515,12 @@ export default function VideosPage() {
                 {v.tab === "TV Series" && v.title && (
                   <div className="text-xs text-stone-700 dark:text-stone-200">
                     <p className="font-semibold text-stone-900 dark:text-stone-100">{v.title}</p>
-                    {typeof v.seasons === "number" && Number.isFinite(v.seasons) && v.seasons > 0 && (
-                      <p className="text-[11px] text-stone-600 dark:text-stone-400">Seasons: {v.seasons}</p>
-                    )}
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-stone-600 dark:text-stone-400">
+                      {episodeLabel !== null ? <span>Episode: {episodeLabel}</span> : null}
+                      {typeof v.seasons === "number" && Number.isFinite(v.seasons) && v.seasons > 0 ? (
+                        <span>Seasons: {v.seasons}</span>
+                      ) : null}
+                    </div>
                   </div>
                 )}
 

@@ -15,14 +15,29 @@ type VideoDoc = {
   embedUrl: string;
   tab: VideoTab;
   title?: string;
+  episode?: number;
   seasons?: number;
   order?: number;
+  manualOrder?: boolean;
   createdAt: Date;
   createdByFid?: number;
 };
 
 function isVideoTab(value: unknown): value is VideoTab {
   return value === "Worship Music" || value === "Teaching Videos" || value === "TV Series";
+}
+
+function parseSeriesTitleAndEpisode(rawTitle: string): { seriesTitle: string; episode: number | null } {
+  const title = rawTitle.trim().replace(/\s+/g, " ");
+  if (!title) return { seriesTitle: "", episode: null };
+
+  const match = title.match(/^(.*?)(?:\s*[-–—:]?\s*)?(?:episode|ep)\s*(\d+)\s*$/i);
+  if (!match) return { seriesTitle: title, episode: null };
+
+  const seriesTitle = (match[1] ?? "").trim().replace(/\s+/g, " ");
+  const episode = Number(match[2]);
+  if (!Number.isFinite(episode) || episode <= 0) return { seriesTitle: seriesTitle || title, episode: null };
+  return { seriesTitle: seriesTitle || title, episode };
 }
 
 const SEED_VIDEOS: Omit<VideoDoc, "createdAt" | "createdByFid">[] = [
@@ -81,20 +96,44 @@ export async function GET() {
       .limit(200)
       .toArray();
 
-    videos.sort((a, b) => {
+    const normalized = videos.map((video) => {
+      if (video.tab !== "TV Series") return video;
+      const { seriesTitle, episode } = parseSeriesTitleAndEpisode(video.title ?? "");
+      return {
+        ...video,
+        title: seriesTitle || video.title,
+        episode: typeof video.episode === "number" ? video.episode : episode ?? undefined,
+      };
+    });
+
+    normalized.sort((a, b) => {
       if (a.tab !== b.tab) return a.tab.localeCompare(b.tab);
 
-      const aHasOrder = typeof a.order === "number" && Number.isFinite(a.order);
-      const bHasOrder = typeof b.order === "number" && Number.isFinite(b.order);
-      if (aHasOrder && bHasOrder) return (a.order as number) - (b.order as number);
-      if (aHasOrder) return -1;
-      if (bHasOrder) return 1;
+      if (a.tab === "TV Series") {
+        const aManual = a.manualOrder === true;
+        const bManual = b.manualOrder === true;
+        const aHasOrder = aManual && typeof a.order === "number" && Number.isFinite(a.order);
+        const bHasOrder = bManual && typeof b.order === "number" && Number.isFinite(b.order);
+        if (aHasOrder && bHasOrder) return (a.order as number) - (b.order as number);
 
-      if (a.tab === "TV Series") return a.createdAt.getTime() - b.createdAt.getTime();
+        const aEpisode = typeof a.episode === "number" && Number.isFinite(a.episode) ? a.episode : null;
+        const bEpisode = typeof b.episode === "number" && Number.isFinite(b.episode) ? b.episode : null;
+        if (aEpisode !== null && bEpisode !== null) return aEpisode - bEpisode;
+        if (aEpisode !== null) return -1;
+        if (bEpisode !== null) return 1;
+        return a.createdAt.getTime() - b.createdAt.getTime();
+      }
+
+      const aManual = a.manualOrder === true;
+      const bManual = b.manualOrder === true;
+      const aHasOrder = aManual && typeof a.order === "number" && Number.isFinite(a.order);
+      const bHasOrder = bManual && typeof b.order === "number" && Number.isFinite(b.order);
+      if (aHasOrder && bHasOrder) return (a.order as number) - (b.order as number);
+
       return b.createdAt.getTime() - a.createdAt.getTime();
     });
 
-    return NextResponse.json({ videos }, { status: 200 });
+    return NextResponse.json({ videos: normalized }, { status: 200 });
   } catch (e) {
     const message = e instanceof Error ? e.message : "Failed to load videos";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -131,12 +170,18 @@ export async function POST(request: Request) {
         ? Math.trunc(Number(rawSeasons))
         : null;
 
+  const parsedTitle =
+    tab === "TV Series" ? parseSeriesTitleAndEpisode(rawTitle) : { seriesTitle: rawTitle, episode: null };
+
   if (tab === "TV Series") {
     if (!rawTitle) {
       return NextResponse.json({ error: "Title is required for TV Series." }, { status: 400 });
     }
     if (seasons !== null && (!Number.isFinite(seasons) || seasons < 1 || seasons > 200)) {
       return NextResponse.json({ error: "Seasons must be a number between 1 and 200." }, { status: 400 });
+    }
+    if (parsedTitle.episode !== null && seasons !== null && parsedTitle.episode > seasons) {
+      return NextResponse.json({ error: "Episode cannot be greater than seasons." }, { status: 400 });
     }
   } else {
     if (rawTitle || rawSeasons !== undefined) {
@@ -157,32 +202,37 @@ export async function POST(request: Request) {
     tab,
     ...(tab === "TV Series"
       ? {
-          title: rawTitle,
+          title: parsedTitle.seriesTitle,
+          ...(parsedTitle.episode !== null ? { episode: parsedTitle.episode } : {}),
           ...(seasons !== null ? { seasons } : {}),
         }
       : {}),
     order: undefined,
+    manualOrder: false,
     createdAt: new Date(),
   };
 
   try {
     const db = await getMongoDb();
     const collection = db.collection<VideoDoc>("videos");
-    const last = await collection
-      .find(
-        tab === "TV Series" && rawTitle ? { tab, title: rawTitle } : { tab },
-        { projection: { _id: 0, order: 1, createdAt: 1 } },
-      )
-      .sort({ order: -1, createdAt: -1 })
-      .limit(1)
-      .toArray();
-
     const nextOrder =
-      last.length > 0 && typeof last[0]?.order === "number" && Number.isFinite(last[0].order)
-        ? (last[0].order as number) + 1
-        : 1;
+      tab === "TV Series" && parsedTitle.episode !== null
+        ? parsedTitle.episode
+        : (() => {
+            const filter = tab === "TV Series" && parsedTitle.seriesTitle ? { tab, title: parsedTitle.seriesTitle } : { tab };
+            return collection
+              .find(filter, { projection: { _id: 0, order: 1, createdAt: 1 } })
+              .sort({ order: -1, createdAt: -1 })
+              .limit(1)
+              .toArray()
+              .then((last) =>
+                last.length > 0 && typeof last[0]?.order === "number" && Number.isFinite(last[0].order)
+                  ? (last[0].order as number) + 1
+                  : 1,
+              );
+          })();
 
-    const saved: VideoDoc = { ...doc, order: nextOrder };
+    const saved: VideoDoc = { ...doc, order: await nextOrder };
     await collection.insertOne(saved);
     return NextResponse.json({ video: saved }, { status: 201 });
   } catch (e) {

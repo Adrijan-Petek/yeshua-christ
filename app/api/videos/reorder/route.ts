@@ -11,10 +11,20 @@ type VideoDoc = {
   id: string;
   tab: VideoTab;
   title?: string;
+  episode?: number;
 };
 
 function isVideoTab(value: unknown): value is VideoTab {
   return value === "Worship Music" || value === "Teaching Videos" || value === "TV Series";
+}
+
+function parseSeriesTitle(rawTitle: string): string {
+  const title = rawTitle.trim().replace(/\s+/g, " ");
+  if (!title) return "";
+  const match = title.match(/^(.*?)(?:\s*[-–—:]?\s*)?(?:episode|ep)\s*(\d+)\s*$/i);
+  if (!match) return title;
+  const seriesTitle = (match[1] ?? "").trim().replace(/\s+/g, " ");
+  return seriesTitle || title;
 }
 
 export async function POST(request: Request) {
@@ -52,21 +62,30 @@ export async function POST(request: Request) {
   try {
     const db = await getMongoDb();
     const collection = db.collection<VideoDoc>("videos");
-    const filter: Partial<Pick<VideoDoc, "tab" | "title">> = { tab };
-    if (tab === "TV Series" && title) filter.title = title;
-
     const existing = await collection
-      .find({ ...filter, id: { $in: orderedIds } }, { projection: { _id: 0, id: 1 } })
+      .find({ id: { $in: orderedIds } }, { projection: { _id: 0, id: 1, tab: 1, title: 1 } })
       .toArray();
 
     if (existing.length !== orderedIds.length) {
       return NextResponse.json({ error: "Some ids were not found in this tab" }, { status: 400 });
     }
 
+    for (const doc of existing) {
+      if (doc.tab !== tab) {
+        return NextResponse.json({ error: "Some ids were not found in this tab" }, { status: 400 });
+      }
+      if (tab === "TV Series" && title) {
+        const docSeriesTitle = parseSeriesTitle(doc.title ?? "");
+        if (docSeriesTitle !== title) {
+          return NextResponse.json({ error: "Some ids were not found in this series title" }, { status: 400 });
+        }
+      }
+    }
+
     const ops = orderedIds.map((id, idx) => ({
       updateOne: {
-        filter: { ...filter, id },
-        update: { $set: { order: idx + 1 } },
+        filter: { id },
+        update: { $set: { order: idx + 1, manualOrder: true } },
       },
     }));
 
@@ -77,4 +96,3 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
-

@@ -6,7 +6,7 @@ import { getAdminCookieName, getAdminFromSessionToken, parseCookies } from "@/li
 export const runtime = "nodejs";
 export const revalidate = 0;
 
-type VideoTab = "Worship Music" | "Teaching Videos";
+type VideoTab = "Worship Music" | "Teaching Videos" | "TV Series";
 
 type VideoDoc = {
   id: string;
@@ -14,12 +14,14 @@ type VideoDoc = {
   shareUrl: string;
   embedUrl: string;
   tab: VideoTab;
+  title?: string;
+  seasons?: number;
   createdAt: Date;
   createdByFid?: number;
 };
 
 function isVideoTab(value: unknown): value is VideoTab {
-  return value === "Worship Music" || value === "Teaching Videos";
+  return value === "Worship Music" || value === "Teaching Videos" || value === "TV Series";
 }
 
 const SEED_VIDEOS: Omit<VideoDoc, "createdAt" | "createdByFid">[] = [
@@ -96,12 +98,36 @@ export async function POST(request: Request) {
   const body = (await request.json().catch(() => null)) as {
     url?: unknown;
     tab?: unknown;
+    title?: unknown;
+    seasons?: unknown;
   } | null;
 
   const url = typeof body?.url === "string" ? body.url : null;
   const tab = body?.tab;
   if (!url || !isVideoTab(tab)) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  const rawTitle = typeof body?.title === "string" ? body.title.trim() : "";
+  const rawSeasons = body?.seasons;
+  const seasons =
+    typeof rawSeasons === "number" && Number.isFinite(rawSeasons)
+      ? Math.trunc(rawSeasons)
+      : typeof rawSeasons === "string" && rawSeasons.trim().length > 0
+        ? Math.trunc(Number(rawSeasons))
+        : null;
+
+  if (tab === "TV Series") {
+    if (!rawTitle) {
+      return NextResponse.json({ error: "Title is required for TV Series." }, { status: 400 });
+    }
+    if (seasons !== null && (!Number.isFinite(seasons) || seasons < 1 || seasons > 200)) {
+      return NextResponse.json({ error: "Seasons must be a number between 1 and 200." }, { status: 400 });
+    }
+  } else {
+    if (rawTitle || rawSeasons !== undefined) {
+      return NextResponse.json({ error: "Title and seasons are only allowed for TV Series." }, { status: 400 });
+    }
   }
 
   const parsed = parseVideoUrl(url);
@@ -115,6 +141,12 @@ export async function POST(request: Request) {
     shareUrl: parsed.shareUrl,
     embedUrl: parsed.embedUrl,
     tab,
+    ...(tab === "TV Series"
+      ? {
+          title: rawTitle,
+          ...(seasons !== null ? { seasons } : {}),
+        }
+      : {}),
     createdAt: new Date(),
   };
 

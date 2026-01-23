@@ -7,7 +7,7 @@ type AdminPanelProps = {
 };
 
 const STORAGE_KEY_RULES = "yc_admin_rules";
-const VIDEO_TABS = ["Worship Music", "Teaching Videos"] as const;
+const VIDEO_TABS = ["Worship Music", "Teaching Videos", "TV Series"] as const;
 type VideoTab = (typeof VIDEO_TABS)[number];
 type VideoEntry = {
   id: string;
@@ -15,6 +15,8 @@ type VideoEntry = {
   shareUrl: string;
   embedUrl: string;
   tab: VideoTab;
+  title?: string;
+  seasons?: number;
   createdAt?: string;
 };
 
@@ -33,6 +35,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTab, setVideoTab] = useState<VideoTab>("Worship Music");
+  const [videoTitle, setVideoTitle] = useState("");
+  const [videoSeasons, setVideoSeasons] = useState("");
   const [videos, setVideos] = useState<VideoEntry[]>([]);
   const [videosLoading, setVideosLoading] = useState(false);
 
@@ -139,11 +143,22 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       const res = await fetch("/api/videos", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: videoUrl.trim(), tab: videoTab }),
+        body: JSON.stringify({
+          url: videoUrl.trim(),
+          tab: videoTab,
+          ...(videoTab === "TV Series"
+            ? {
+                title: videoTitle.trim(),
+                seasons: videoSeasons.trim(),
+              }
+            : {}),
+        }),
       });
       const json = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setVideoUrl("");
+      setVideoTitle("");
+      setVideoSeasons("");
       await loadVideos();
       setNotice("Video added.");
       window.setTimeout(() => setNotice(null), 2000);
@@ -206,6 +221,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     const next: Record<VideoTab, VideoEntry[]> = {
       "Worship Music": [],
       "Teaching Videos": [],
+      "TV Series": [],
     };
 
     for (const video of videos) {
@@ -384,7 +400,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
               <div className="space-y-1">
                 <h3 className="text-base font-semibold text-stone-950 dark:text-stone-100">Videos</h3>
                 <p className="text-xs text-stone-600 dark:text-stone-400">
-                  Add YouTube links to Worship Music or Teaching Videos.
+                  Add YouTube/Facebook links to Worship Music, Teaching Videos, or TV Series.
                 </p>
               </div>
 
@@ -392,7 +408,7 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 <input
                   value={videoUrl}
                   onChange={(e) => setVideoUrl(e.target.value)}
-                  placeholder="Paste YouTube video or playlist link"
+                  placeholder="Paste YouTube or Facebook video link"
                   className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
                   disabled={!isAdmin}
                 />
@@ -410,10 +426,34 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 </select>
               </div>
 
+              {videoTab === "TV Series" && (
+                <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[1fr_180px]">
+                  <input
+                    value={videoTitle}
+                    onChange={(e) => setVideoTitle(e.target.value)}
+                    placeholder="Series title"
+                    className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
+                    disabled={!isAdmin}
+                  />
+                  <input
+                    value={videoSeasons}
+                    onChange={(e) => setVideoSeasons(e.target.value)}
+                    placeholder="Seasons (optional)"
+                    inputMode="numeric"
+                    className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
+                    disabled={!isAdmin}
+                  />
+                </div>
+              )}
+
               <div className="flex items-center justify-end">
                 <button
                   onClick={addVideo}
-                  disabled={!isAdmin || videoUrl.trim().length === 0}
+                  disabled={
+                    !isAdmin ||
+                    videoUrl.trim().length === 0 ||
+                    (videoTab === "TV Series" && videoTitle.trim().length === 0)
+                  }
                   className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-100 disabled:opacity-50 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
                 >
                   Add Video
@@ -451,6 +491,16 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                             className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-900/40 sm:flex-row sm:items-center sm:justify-between"
                           >
                             <div className="min-w-0">
+                              {tab === "TV Series" && video.title && (
+                                <p className="text-xs font-semibold text-stone-900 dark:text-stone-100">
+                                  {video.title}
+                                  {typeof video.seasons === "number" && Number.isFinite(video.seasons) ? (
+                                    <span className="ml-2 text-[11px] font-medium text-stone-600 dark:text-stone-400">
+                                      Seasons: {video.seasons}
+                                    </span>
+                                  ) : null}
+                                </p>
+                              )}
                               <a
                                 href={video.shareUrl}
                                 target="_blank"

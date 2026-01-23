@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { buildWarpcastComposeUrl, tryComposeCast } from "../../lib/farcasterShare";
 import { parseVideoUrl } from "@/lib/videoUrl";
 
-type VideoTab = "Worship Music" | "Teaching Videos";
+type VideoTab = "Worship Music" | "Teaching Videos" | "TV Series";
 
 type VideoEntry = {
   id: string;
@@ -12,9 +12,11 @@ type VideoEntry = {
   shareUrl: string;
   embedUrl: string;
   tab: VideoTab;
+  title?: string;
+  seasons?: number;
 };
 
-const TABS: VideoTab[] = ["Worship Music", "Teaching Videos"];
+const TABS: VideoTab[] = ["Worship Music", "Teaching Videos", "TV Series"];
 
 export default function VideosPage() {
   const [input, setInput] = useState("");
@@ -25,6 +27,8 @@ export default function VideosPage() {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const [seriesTitle, setSeriesTitle] = useState("");
+  const [seriesSeasons, setSeriesSeasons] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -61,7 +65,11 @@ export default function VideosPage() {
     };
   }, []);
 
-  const canAdd = useMemo(() => input.trim().length > 0, [input]);
+  const canAdd = useMemo(() => {
+    if (input.trim().length === 0) return false;
+    if (tab === "TV Series") return seriesTitle.trim().length > 0;
+    return true;
+  }, [input, seriesTitle, tab]);
 
   async function add() {
     setError(null);
@@ -75,13 +83,24 @@ export default function VideosPage() {
       const response = await fetch("/api/videos", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: input.trim(), tab }),
+        body: JSON.stringify({
+          url: input.trim(),
+          tab,
+          ...(tab === "TV Series"
+            ? {
+                title: seriesTitle.trim(),
+                seasons: seriesSeasons.trim(),
+              }
+            : {}),
+        }),
       });
 
       const data = (await response.json()) as { video?: VideoEntry; error?: string };
       if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
       if (data.video) setVideos((prev) => [data.video!, ...prev]);
       setInput("");
+      setSeriesTitle("");
+      setSeriesSeasons("");
     } catch (e) {
       const message = e instanceof Error ? e.message : "Unable to add video.";
       setError(message);
@@ -170,6 +189,24 @@ export default function VideosPage() {
           </button>
         </div>
 
+        {tab === "TV Series" && (
+          <div className="mt-2.5 grid grid-cols-1 gap-2.5 sm:grid-cols-[1fr_150px]">
+            <input
+              value={seriesTitle}
+              onChange={(e) => setSeriesTitle(e.target.value)}
+              placeholder="Series title"
+              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
+            />
+            <input
+              value={seriesSeasons}
+              onChange={(e) => setSeriesSeasons(e.target.value)}
+              placeholder="Seasons (optional)"
+              inputMode="numeric"
+              className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
+            />
+          </div>
+        )}
+
         {error && <p className="mt-2 text-xs sm:text-sm text-red-700">{error}</p>}
       </section>
       )}
@@ -252,6 +289,15 @@ export default function VideosPage() {
                     )}
                   </div>
                 </div>
+
+                {v.tab === "TV Series" && v.title && (
+                  <div className="text-xs text-stone-700 dark:text-stone-200">
+                    <p className="font-semibold text-stone-900 dark:text-stone-100">{v.title}</p>
+                    {typeof v.seasons === "number" && Number.isFinite(v.seasons) && v.seasons > 0 && (
+                      <p className="text-[11px] text-stone-600 dark:text-stone-400">Seasons: {v.seasons}</p>
+                    )}
+                  </div>
+                )}
 
                 <a
                   href={shareHref}

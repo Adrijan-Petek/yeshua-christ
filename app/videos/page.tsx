@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { buildWarpcastComposeUrl, tryComposeCast } from "../../lib/farcasterShare";
-import { parseYouTubeUrl } from "@/lib/youtube";
+import { parseVideoUrl } from "@/lib/videoUrl";
 
 type VideoTab = "Worship Music" | "Teaching Videos";
 
@@ -65,9 +65,9 @@ export default function VideosPage() {
 
   async function add() {
     setError(null);
-    const parsed = parseYouTubeUrl(input);
+    const parsed = parseVideoUrl(input);
     if (!parsed) {
-      setError("Please paste a valid YouTube video or playlist link.");
+      setError("Please paste a valid YouTube or Facebook video link.");
       return;
     }
 

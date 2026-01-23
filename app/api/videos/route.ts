@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getMongoDb } from "@/lib/mongodb";
-import { parseYouTubeUrl } from "@/lib/youtube";
+import { parseVideoUrl } from "@/lib/videoUrl";
 import { getAdminCookieName, getAdminFromSessionToken, parseCookies } from "@/lib/adminAuth";
 
 export const runtime = "nodejs";
@@ -47,7 +47,7 @@ async function ensureSeedVideos() {
   if (existingCount > 0) return;
 
   for (const seed of SEED_VIDEOS) {
-    const parsed = parseYouTubeUrl(seed.originalUrl);
+    const parsed = parseVideoUrl(seed.originalUrl);
     if (!parsed) continue;
 
     await collection.updateOne(
@@ -104,9 +104,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
   }
 
-  const parsed = parseYouTubeUrl(url);
+  const parsed = parseVideoUrl(url);
   if (!parsed) {
-    return NextResponse.json({ error: "Please provide a valid YouTube link." }, { status: 400 });
+    return NextResponse.json({ error: "Please provide a valid YouTube or Facebook link." }, { status: 400 });
   }
 
   const doc: VideoDoc = {

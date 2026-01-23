@@ -25,7 +25,7 @@ Yeshua-Christ is a professional, faith-focused web application designed to share
 
 - Sharing daily verses and testimonies on Farcaster
 - Accessing Bible readings and downloads
-- Viewing curated videos for worship, sermons, and Bible study
+- Viewing curated worship/teaching videos (YouTube + Facebook embeds)
 - Connecting with the faith community through wallet integration
 
 This project exists solely to glorify Christ and spread His message without monetization or speculation.
@@ -39,6 +39,10 @@ This project exists solely to glorify Christ and spread His message without mone
 - Live Farcaster feed with #YeshuaChrist posts
 - Community rules and guidelines
 
+### ✝️ Teachings
+- “Yeshua: The Name of Jesus and Its Meaning” teaching card on the home page
+- Optional Farcaster recast/share button for the teaching content
+
 ### 📖 Bible Reader
 - **Interactive Bible Reading**: Full KJV Bible with verse-by-verse navigation
 - **Multiple Formats**: Read online via PDF viewer or interactive text mode
@@ -48,10 +52,9 @@ This project exists solely to glorify Christ and spread His message without mone
 - **Smart Navigation**: Jump to any book and chapter instantly
 
 ### 🎥 Video Library
-- Curated YouTube embeds for sermons, worship, and Bible studies
-- Admin-gated video addition for quality control
-- Category-based organization (Sermon, Worship, Testimony, Bible Study)
-- Responsive video cards with inline playback
+- YouTube and Facebook video embeds
+- Tabs: Worship Music, Teaching Videos
+- Admin-only add and remove controls (from the Videos page and Admin Panel)
 - One-click sharing to Farcaster
 
 ### 🔐 Wallet Integration & Identity
@@ -73,17 +76,14 @@ This project exists solely to glorify Christ and spread His message without mone
 ## 🛠️ Tech Stack
 
 - **Framework**: [Next.js 16.1.1](https://nextjs.org/) (App Router, React 19, TypeScript)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/) with custom themes and dark mode
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/) (dark mode supported)
 - **Farcaster Integration**: 
   - [@farcaster/miniapp-sdk](https://github.com/farcaster/miniapp-sdk) v0.2.1 - Mini App SDK with Quick Auth
   - [@farcaster/auth-kit](https://docs.farcaster.xyz/auth-kit/introduction) v0.8.1 - QR sign-in fallback
   - [@farcaster/quick-auth](https://github.com/farcaster/quick-auth) - Server-side JWT verification
-- **Wallet**: wagmi v2.14.3 + viem v2.22.5 for Web3 interactions
-- **State Management**: React hooks and context
-- **APIs**:
-  - Warpcast API for user profiles and feed
-  - Farcaster Hub API for on-chain data
-- **Deployment**: [Vercel](https://vercel.com/) with Edge Runtime
+- **Wallet/Web3**: wagmi + viem
+- **Database**: MongoDB
+- **Deployment**: [Vercel](https://vercel.com/) (Node.js runtime for API routes)
 - **CI/CD**: GitHub Actions
 - **Linting**: ESLint with TypeScript rules
 
@@ -109,14 +109,23 @@ This project exists solely to glorify Christ and spread His message without mone
 
 3. **Set up environment variables**
 
-   Copy `.env.local.example` to `.env.local` and configure:
+   Create `.env.local` and configure:
    ```env
    NEXT_PUBLIC_APP_URL=https://yeshua-christ.vercel.app
    NEXT_PUBLIC_DOMAIN=yeshua-christ.vercel.app
    NEXT_PUBLIC_SIWE_URI=https://yeshua-christ.vercel.app
-   ```
 
-   **Note**: No API keys required! The app uses public endpoints.
+   MONGODB_URI=mongodb+srv://...
+   # optional:
+   # MONGODB_DB=yeshua_christ
+
+   # optional: bootstrap first admin user (only if no admins exist yet)
+   # ADMIN_BOOTSTRAP_EMAIL=admin@example.com
+   # ADMIN_BOOTSTRAP_PASSWORD=strong-password
+   #
+   # optional: Farcaster FIDs that should be considered admin in-app
+   # ADMIN_FIDS=123,456
+   ```
 
 4. **Run the development server**
    ```bash
@@ -133,7 +142,6 @@ This project exists solely to glorify Christ and spread His message without mone
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript type checking (if configured)
 
 ## 📱 Usage
 
@@ -163,8 +171,9 @@ The app is fully optimized for mobile devices:
 ### For Admins
 
 Access admin features by clicking the logo 10 times on the home page:
-- Manage admin rules
-- Add new videos to the library
+- Community rules editor (stored in localStorage)
+- Video link management (add/remove)
+- Admin security: login/logout, change password, create admin users
 
 ## 🚀 Deployment
 
@@ -226,6 +235,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Splash Screen**: Reduced logo size (128→80px) for better mobile experience
 - **Consistent Design**: Unified button padding, rounded corners, and spacing throughout
 - **Performance**: Build optimized and verified for production deployment
+
+### 2026 - Admin + Video Updates
+- Added admin removal for saved video links
+- Added Facebook video embed support
+- Added Yeshua teaching card under Daily Verse
 
 ## 📞 Contact
 

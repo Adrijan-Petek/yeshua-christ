@@ -88,6 +88,21 @@ export default function VideosPage() {
     }
   }
 
+  async function removeVideo(id: string) {
+    setError(null);
+    if (!window.confirm("Remove this link from the app?")) return;
+
+    try {
+      const res = await fetch(`/api/videos/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setVideos((prev) => prev.filter((v) => v.id !== id));
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Unable to remove video.";
+      setError(message);
+    }
+  }
+
   const visibleVideos = useMemo(() => videos.filter((v) => v.tab === activeTab), [activeTab, videos]);
 
   return (
@@ -123,13 +138,13 @@ export default function VideosPage() {
 
       {isAdmin && (
       <section className="rounded-xl border border-stone-200 bg-white p-4 sm:p-5 shadow-sm dark:border-stone-700 dark:bg-black">
-        <h2 className="mb-3 text-base sm:text-lg font-semibold">Add a YouTube link</h2>
+        <h2 className="mb-3 text-base sm:text-lg font-semibold">Add a link</h2>
 
         <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-[1fr_150px_110px]">
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="Paste YouTube video or playlist link"
+            placeholder="Paste YouTube or Facebook video link"
             className="w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-stone-200 dark:border-stone-700 dark:bg-black dark:focus:ring-stone-700"
           />
 
@@ -166,6 +181,8 @@ export default function VideosPage() {
           <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">No videos added yet.</p>
         )}
 
+        {error && <p className="text-xs sm:text-sm text-red-700">{error}</p>}
+
         <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
           {visibleVideos.map((v) => {
             const isPlaylist = v.embedUrl.includes('videoseries');
@@ -180,6 +197,18 @@ export default function VideosPage() {
               if (!ok) window.open(shareHref, "_blank", "noopener,noreferrer");
             };
 
+            const sourceLabel = (() => {
+              try {
+                const hostname = new URL(v.shareUrl).hostname.replace(/^www\./, "");
+                if (hostname === "facebook.com" || hostname.endsWith(".facebook.com") || hostname === "fb.watch") {
+                  return "Open on Facebook";
+                }
+              } catch {
+                // ignore
+              }
+              return "Open on YouTube";
+            })();
+
             return (
             <article
               key={v.id}
@@ -191,7 +220,7 @@ export default function VideosPage() {
                 <iframe
                   className="h-full w-full"
                   src={v.embedUrl}
-                  title="YouTube embed"
+                  title="Video embed"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   referrerPolicy="strict-origin-when-cross-origin"
                   allowFullScreen
@@ -203,14 +232,25 @@ export default function VideosPage() {
                   <span className="rounded-full border border-stone-200 bg-stone-50 px-2.5 py-1 text-xs text-stone-700 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-200">
                     {v.tab}
                   </span>
-                  <a
-                    href={v.shareUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-stone-600 underline underline-offset-4 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
-                  >
-                    Open on YouTube
-                  </a>
+                  <div className="flex items-center gap-3">
+                    <a
+                      href={v.shareUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-stone-600 underline underline-offset-4 hover:text-stone-800 dark:text-stone-400 dark:hover:text-stone-200"
+                    >
+                      {sourceLabel}
+                    </a>
+                    {isAdmin && (
+                      <button
+                        type="button"
+                        onClick={() => removeVideo(v.id)}
+                        className="rounded-lg border border-red-200 bg-red-50 px-2.5 py-1 text-[11px] font-medium text-red-700 shadow-sm hover:bg-red-100 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 <a

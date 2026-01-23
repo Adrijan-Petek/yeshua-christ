@@ -244,7 +244,11 @@ export default function VideosPage() {
           Videos
         </h1>
         <p className="text-sm sm:text-base text-stone-700 dark:text-stone-300">
-          Share worship music videos that glorify Christ.
+          {activeTab === "Worship Music"
+            ? "Share worship music videos that glorify God and his son Jesus Christ."
+            : activeTab === "Teaching Videos"
+              ? "Share teaching videos that build faith and understanding."
+              : "Share TV series episodes and keep them in order (Episode 1 first)."}
         </p>
       </header>
 

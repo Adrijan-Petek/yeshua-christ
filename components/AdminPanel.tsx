@@ -9,6 +9,14 @@ type AdminPanelProps = {
 const STORAGE_KEY_RULES = "yc_admin_rules";
 const VIDEO_TABS = ["Worship Music", "Teaching Videos"] as const;
 type VideoTab = (typeof VIDEO_TABS)[number];
+type VideoEntry = {
+  id: string;
+  originalUrl: string;
+  shareUrl: string;
+  embedUrl: string;
+  tab: VideoTab;
+  createdAt?: string;
+};
 
 type AdminTab = "Community Rules" | "Videos" | "Security";
 
@@ -25,6 +33,8 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
 
   const [videoUrl, setVideoUrl] = useState("");
   const [videoTab, setVideoTab] = useState<VideoTab>("Worship Music");
+  const [videos, setVideos] = useState<VideoEntry[]>([]);
+  const [videosLoading, setVideosLoading] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -62,6 +72,20 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       cancelled = true;
     };
   }, []);
+
+  const loadVideos = async () => {
+    setVideosLoading(true);
+    try {
+      const response = await fetch("/api/videos", { cache: "no-store" });
+      const data = (await response.json()) as { videos?: VideoEntry[]; error?: string };
+      if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+      setVideos(Array.isArray(data.videos) ? data.videos : []);
+    } catch {
+      // keep existing list; admin still can manage other tabs
+    } finally {
+      setVideosLoading(false);
+    }
+  };
 
   const saveRules = () => {
     localStorage.setItem(STORAGE_KEY_RULES, rules);
@@ -120,10 +144,29 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       const json = (await res.json()) as { error?: string };
       if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
       setVideoUrl("");
+      await loadVideos();
       setNotice("Video added.");
       window.setTimeout(() => setNotice(null), 2000);
     } catch (e) {
       const message = e instanceof Error ? e.message : "Failed to add video.";
+      setAuthError(message);
+    }
+  };
+
+  const removeVideo = async (id: string) => {
+    setAuthError(null);
+    setNotice(null);
+    if (!window.confirm("Remove this link from the app?")) return;
+
+    try {
+      const res = await fetch(`/api/videos/${encodeURIComponent(id)}`, { method: "DELETE" });
+      const json = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) throw new Error(json.error || `HTTP ${res.status}`);
+      setVideos((prev) => prev.filter((v) => v.id !== id));
+      setNotice("Video removed.");
+      window.setTimeout(() => setNotice(null), 2000);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Failed to remove video.";
       setAuthError(message);
     }
   };
@@ -154,6 +197,23 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
       setAuthError(message);
     }
   };
+
+  useEffect(() => {
+    void loadVideos();
+  }, []);
+
+  const videosByTab = useMemo(() => {
+    const next: Record<VideoTab, VideoEntry[]> = {
+      "Worship Music": [],
+      "Teaching Videos": [],
+    };
+
+    for (const video of videos) {
+      next[video.tab]?.push(video);
+    }
+
+    return next;
+  }, [videos]);
 
   const createAdmin = async () => {
     setAuthError(null);
@@ -358,6 +418,71 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
                 >
                   Add Video
                 </button>
+              </div>
+
+              <div className="mt-2 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-800 dark:bg-black">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-sm font-semibold text-stone-950 dark:text-stone-100">Added links</p>
+                  <button
+                    type="button"
+                    onClick={loadVideos}
+                    className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs font-medium shadow-sm hover:bg-stone-100 dark:border-stone-700 dark:bg-stone-800 dark:hover:bg-stone-700"
+                  >
+                    Refresh
+                  </button>
+                </div>
+
+                {videosLoading && (
+                  <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">Loading links…</p>
+                )}
+
+                {!videosLoading && videos.length === 0 && (
+                  <p className="mt-2 text-xs text-stone-600 dark:text-stone-400">No links saved yet.</p>
+                )}
+
+                <div className="mt-3 space-y-4">
+                  {VIDEO_TABS.map((tab) => (
+                    <div key={tab} className="space-y-2">
+                      <p className="text-xs font-semibold text-stone-700 dark:text-stone-300">{tab}</p>
+                      <div className="space-y-2">
+                        {videosByTab[tab].map((video) => (
+                          <div
+                            key={video.id}
+                            className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-stone-50 p-3 dark:border-stone-800 dark:bg-stone-900/40 sm:flex-row sm:items-center sm:justify-between"
+                          >
+                            <div className="min-w-0">
+                              <a
+                                href={video.shareUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block truncate text-xs text-stone-700 underline underline-offset-4 hover:text-stone-900 dark:text-stone-200 dark:hover:text-stone-100"
+                              >
+                                {video.shareUrl}
+                              </a>
+                              {video.originalUrl && video.originalUrl !== video.shareUrl && (
+                                <p className="mt-1 truncate text-[11px] text-stone-600 dark:text-stone-400">
+                                  Added from: {video.originalUrl}
+                                </p>
+                              )}
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => removeVideo(video.id)}
+                              disabled={!isAdmin}
+                              className="shrink-0 rounded-xl border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-700 shadow-sm hover:bg-red-100 disabled:opacity-50 dark:border-red-900/40 dark:bg-red-950/40 dark:text-red-300 dark:hover:bg-red-950/60"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                        {videosByTab[tab].length === 0 && (
+                          <p className="text-xs text-stone-600 dark:text-stone-400">No links in this tab.</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </section>
           )}

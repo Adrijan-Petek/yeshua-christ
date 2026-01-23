@@ -43,6 +43,9 @@ async function ensureSeedVideos() {
   const db = await getMongoDb();
   const collection = db.collection<VideoDoc>("videos");
 
+  const existingCount = await collection.countDocuments({}, { limit: 1 });
+  if (existingCount > 0) return;
+
   for (const seed of SEED_VIDEOS) {
     const parsed = parseYouTubeUrl(seed.originalUrl);
     if (!parsed) continue;

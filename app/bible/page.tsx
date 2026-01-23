@@ -441,7 +441,7 @@ export default function BiblePage() {
                   selected?.book === bookName &&
                   selected?.chapter === chapterNumber &&
                   selected?.verse === n;
-                const shareText = `${bookName} ${chapterNumber}:${n} (KJV)\n\n${text}\n\n#YeshuaChrist`;
+                const shareText = `The Holy Bible (KJV)\n${bookName} ${chapterNumber}:${n}\n\n${text}\n\n#YeshuaChrist`;
                 const shareHref = buildWarpcastComposeUrl({ text: shareText, embeds: shareEmbeds });
 
                 return (

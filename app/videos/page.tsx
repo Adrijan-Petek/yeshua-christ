@@ -191,13 +191,19 @@ export default function VideosPage() {
     return [...ids, ...missing].map((id) => reorderVideoMap.get(id)!).filter(Boolean);
   }, [reorderIds, reorderScopeVideos, reorderVideoMap]);
 
-  function moveBefore(list: string[], moving: string, before: string) {
-    if (moving === before) return list;
-    const next = list.filter((id) => id !== moving);
-    const beforeIndex = next.indexOf(before);
-    if (beforeIndex === -1) return list;
-    next.splice(beforeIndex, 0, moving);
-    return next;
+  function moveRelative(list: string[], moving: string, target: string, position: "before" | "after") {
+    if (moving === target) return list;
+    const withoutMoving = list.filter((id) => id !== moving);
+    const targetIndex = withoutMoving.indexOf(target);
+    if (targetIndex === -1) return list;
+    const insertIndex = position === "before" ? targetIndex : targetIndex + 1;
+    withoutMoving.splice(insertIndex, 0, moving);
+    return withoutMoving;
+  }
+
+  function moveToEnd(list: string[], moving: string) {
+    const withoutMoving = list.filter((id) => id !== moving);
+    return [...withoutMoving, moving];
   }
 
   async function saveReorder() {
@@ -385,16 +391,28 @@ export default function VideosPage() {
               </div>
             </div>
 
-            <div className="mt-3 space-y-2">
+                <div className="mt-3 space-y-2">
               {reorderList.map((v, index) => (
                 <div
                   key={v.id}
                   draggable
-                  onDragStart={() => setDragId(v.id)}
+                  onDragStart={(e) => {
+                    setDragId(v.id);
+                    try {
+                      e.dataTransfer.setData("text/plain", v.id);
+                      e.dataTransfer.effectAllowed = "move";
+                    } catch {
+                      // ignore
+                    }
+                  }}
                   onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => {
+                  onDrop={(e) => {
                     if (!dragId) return;
-                    setReorderIds((prev) => moveBefore(prev.length ? prev : reorderList.map((x) => x.id), dragId, v.id));
+                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                    const isAfter = e.clientY > rect.top + rect.height / 2;
+                    const current = reorderList.map((x) => x.id);
+                    const next = moveRelative(current, dragId, v.id, isAfter ? "after" : "before");
+                    setReorderIds(next);
                     setReorderDirty(true);
                     setDragId(null);
                   }}
@@ -412,6 +430,20 @@ export default function VideosPage() {
                 </div>
               ))}
             </div>
+
+            <div
+              onDragOver={(e) => e.preventDefault()}
+              onDrop={() => {
+                if (!dragId) return;
+                const current = reorderList.map((x) => x.id);
+                setReorderIds(moveToEnd(current, dragId));
+                setReorderDirty(true);
+                setDragId(null);
+              }}
+              className="mt-2 rounded-xl border border-dashed border-stone-300 bg-white px-3 py-2 text-center text-xs text-stone-600 dark:border-stone-700 dark:bg-black dark:text-stone-400"
+            >
+              Drop here to move to end
+            </div>
           </section>
         )}
 
@@ -419,13 +451,22 @@ export default function VideosPage() {
           {sortedVisibleVideos.map((v) => {
             const isPlaylist = v.embedUrl.includes('videoseries');
 
-            const shareText = `Be encouraged in Christ\n\n#YeshuaChrist`;
+            const castTitle =
+              v.tab === "TV Series"
+                ? `${v.title ?? "TV Series"}${
+                    typeof v.order === "number" && Number.isFinite(v.order) ? ` — Episode ${v.order}` : ""
+                  }`
+                : v.tab === "Worship Music"
+                  ? "Worship Music"
+                  : "Teaching Video";
+
+            const shareText = `${castTitle}\n\n${v.shareUrl}\n\n#YeshuaChrist`;
             const shareEmbeds = [v.shareUrl, appUrl].filter(Boolean) as string[];
-            const shareHref = buildWarpcastComposeUrl({ text: `${shareText}\n\n${v.shareUrl}`, embeds: shareEmbeds });
+            const shareHref = buildWarpcastComposeUrl({ text: shareText, embeds: shareEmbeds });
 
             const onShareClick = async (e: React.MouseEvent<HTMLAnchorElement>) => {
               e.preventDefault();
-              const ok = await tryComposeCast({ text: `${shareText}\n\n${v.shareUrl}`, embeds: shareEmbeds });
+              const ok = await tryComposeCast({ text: shareText, embeds: shareEmbeds });
               if (!ok) window.open(shareHref, "_blank", "noopener,noreferrer");
             };
 

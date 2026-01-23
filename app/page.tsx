@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useCallback, useMemo } from "react";
 import SplashScreen from "../components/SplashScreen";
 import DailyVerse from "../components/DailyVerse";
+import YeshuaNameCard from "../components/YeshuaNameCard";
 import { buildWarpcastComposeUrl, tryAddMiniApp, tryComposeCast } from "../lib/farcasterShare";
 
 export default function Home() {
@@ -103,6 +104,10 @@ export default function Home() {
 
         <div className="mt-10 w-full max-w-2xl">
           <DailyVerse />
+        </div>
+
+        <div className="mt-8 w-full max-w-2xl">
+          <YeshuaNameCard shareUrl={shareUrl} />
         </div>
 
         <div className="mt-6 grid w-full max-w-lg grid-cols-1 gap-3 sm:grid-cols-2">

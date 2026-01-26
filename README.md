@@ -1,6 +1,7 @@
 
 # Yeshua-Christ
 
+
 <div align="center">
   <img src="public/icons/icon-150x150.png" alt="Yeshua-Christ Logo" width="150" height="150" />
   <h3>A Christ-centered mini app for sharing faith, the Gospel, and biblical content freely.</h3>
